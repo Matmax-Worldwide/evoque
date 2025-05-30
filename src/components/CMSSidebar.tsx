@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This file defines the CMSSidebar component, the primary client-side
+ * navigation sidebar for the "CMS" (Content Management System) module.
+ * It handles internationalization for navigation item labels, manages active link
+ * highlighting, integrates with an unsaved changes context to prevent accidental
+ * data loss when navigating away from a page with pending edits, and provides
+ * a collapsible interface for better space management.
+ */
 'use client';
 
 import React, { useState } from 'react';
@@ -32,7 +40,15 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 
+/**
+ * Props for the CMSSidebar component.
+ */
 interface CMSSidebarProps {
+  /**
+   * Optional object containing localized strings for the sidebar item names.
+   * If provided, it should contain a `cms` key with further nested keys
+   * for each navigation item (e.g., `dashboard`, `pages`, `menus`, `forms`, `blog`, `media`, `settings`).
+   */
   dictionary?: {
     cms?: {
       dashboard: string;
@@ -44,10 +60,20 @@ interface CMSSidebarProps {
       blog: string;
     };
   };
+  /** The current locale string (e.g., "en", "es"), used for constructing localized links. */
   locale: string;
 }
 
-// Custom component for the collapsible button with dynamic icon
+/**
+ * A custom wrapper for the `SidebarCollapseButton` that dynamically changes its icon
+ * (PanelLeftOpen or PanelLeftClose) based on the sidebar's collapsed state,
+ * obtained from `useSidebar` context. This component is identical in function
+ * to one that might be used in other sidebars (e.g., BookingsSidebar).
+ *
+ * @param {object} props - Component props.
+ * @param {string} [props.className=""] - Optional additional CSS classes for the button.
+ * @returns {React.JSX.Element} The rendered collapsible button.
+ */
 function CollapsibleButton({ className = "" }) {
   const { collapsed } = useSidebar();
   
@@ -63,6 +89,35 @@ function CollapsibleButton({ className = "" }) {
   );
 }
 
+/**
+ * `CMSSidebar` is the main navigation sidebar component for the CMS module.
+ * It provides structured navigation links to different CMS sections like Dashboard,
+ * Pages, Menus, Forms, Blog, Media, and Settings. It handles active link highlighting,
+ * integrates with an unsaved changes confirmation system, allows switching
+ * to other application modules, and supports a collapsible interface.
+ *
+ * Key Features:
+ * - Uses UI components from `@/components/ui/sidebar` for its overall structure and elements.
+ * - Navigation items are localized using the `dictionary` prop. Default English labels
+ *   are used if the dictionary is not provided.
+ * - The `isActiveLink` internal function determines if a navigation item matches
+ *   the current route (obtained via `usePathname`) for highlighting.
+ * - **Unsaved Changes Integration**: Utilizes the `useUnsavedChanges` context.
+ *   The `handleNavigation` function intercepts navigation. If `hasUnsavedChanges`
+ *   is true, it prevents immediate navigation and displays an `UnsavedChangesAlert`.
+ *   Users can then choose to save changes and continue (`handleSaveAndContinue`),
+ *   discard changes (`handleDiscardChanges`), or cancel navigation (`handleCancelNavigation`).
+ * - **Module Switcher**: A dropdown in the sidebar header allows users to navigate
+ *   to other main modules of the application, such as Bookings or E-commerce.
+ * - **Collapsible Behavior**: Employs `SidebarProvider` and the custom `CollapsibleButton`
+ *   for collapsing and expanding the sidebar.
+ *
+ * It uses `usePathname` and `useRouter` from `next/navigation` for client-side
+ * routing and determining the active link.
+ *
+ * @param {CMSSidebarProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered CMSSidebar component.
+ */
 export default function CMSSidebar({ dictionary, locale }: CMSSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();

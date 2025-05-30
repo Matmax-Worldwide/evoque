@@ -1,3 +1,10 @@
+/**
+ * @fileoverview This file defines the BookingsSidebar component, which serves as
+ * the primary client-side navigation sidebar for the "Bookings" module of the application.
+ * It handles internationalization for navigation item labels, manages active link
+ * highlighting, integrates with an unsaved changes context to prevent accidental
+ * data loss, and provides a collapsible interface.
+ */
 'use client';
 
 import React, { useState } from 'react';
@@ -35,7 +42,15 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 
+/**
+ * Props for the BookingsSidebar component.
+ */
 interface BookingsSidebarProps {
+  /**
+   * Optional object containing localized strings for the sidebar item names.
+   * If provided, it should contain a `bookings` key with further nested keys
+   * for each navigation item (e.g., `dashboard`, `calendar`, `services`).
+   */
   dictionary?: {
     bookings?: {
       dashboard: string;
@@ -50,10 +65,19 @@ interface BookingsSidebarProps {
       payments: string;
     };
   };
+  /** The current locale string (e.g., "en", "es"), used for constructing localized links. */
   locale: string;
 }
 
-// Custom component for the collapsible button with dynamic icon
+/**
+ * A custom wrapper for the `SidebarCollapseButton` that dynamically changes its icon
+ * (PanelLeftOpen or PanelLeftClose) based on the sidebar's collapsed state,
+ * obtained from `useSidebar` context.
+ *
+ * @param {object} props - Component props.
+ * @param {string} [props.className=""] - Optional additional CSS classes for the button.
+ * @returns {React.JSX.Element} The rendered collapsible button.
+ */
 function CollapsibleButton({ className = "" }) {
   const { collapsed } = useSidebar();
   
@@ -69,6 +93,37 @@ function CollapsibleButton({ className = "" }) {
   );
 }
 
+/**
+ * `BookingsSidebar` is the main navigation sidebar component for the Bookings module.
+ * It provides structured navigation links, handles active link highlighting,
+ * integrates with an unsaved changes confirmation system, allows switching
+ * to other modules (CMS, E-commerce), and supports a collapsible interface.
+ *
+ * Key Features:
+ * - Uses UI components from `@/components/ui/sidebar` for its structure.
+ * - Navigation items are grouped (Main, Management, Analytics) and their labels
+ *   are localized using the `dictionary` prop. If no dictionary is provided,
+ *   it falls back to default English labels.
+ * - The `isActiveLink` internal function determines if a navigation item matches
+ *   the current route (obtained via `usePathname`) for active state highlighting.
+ * - **Unsaved Changes Integration**: It uses the `useUnsavedChanges` context.
+ *   The `handleNavigation` function intercepts navigation attempts. If there are
+ *   unsaved changes (`hasUnsavedChanges` is true), it prevents immediate navigation
+ *   and displays an `UnsavedChangesAlert`.
+ *   - `handleSaveAndContinue`: Attempts to save changes via `onSave` from the context. If successful, proceeds with the pending navigation.
+ *   - `handleDiscardChanges`: Discards changes and proceeds with the pending navigation.
+ *   - `handleCancelNavigation`: Cancels the pending navigation and hides the alert.
+ * - **Module Switcher**: The sidebar header includes a dropdown menu to switch to
+ *   other application modules like CMS or E-commerce.
+ * - **Collapsible Behavior**: Leverages `SidebarProvider` and the custom `CollapsibleButton`
+ *   to allow users to collapse and expand the sidebar.
+ *
+ * It relies on `usePathname` and `useRouter` from `next/navigation` for routing and
+ * active link detection.
+ *
+ * @param {BookingsSidebarProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered BookingsSidebar component.
+ */
 export default function BookingsSidebar({ dictionary, locale }: BookingsSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();

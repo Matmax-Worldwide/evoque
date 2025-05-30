@@ -1,3 +1,12 @@
+/**
+ * @fileoverview This file defines the CommerceSidebar component, the primary client-side
+ * navigation sidebar for the "E-commerce" module of the application.
+ * It handles internationalization for navigation item labels, manages active link
+ * highlighting, integrates with an unsaved changes context to prevent accidental
+ * data loss, and provides a collapsible interface.
+ * Note: The E-commerce module itself might be pending full implementation, and this
+ * sidebar provides the navigational structure for its anticipated features.
+ */
 'use client';
 
 import React, { useState } from 'react';
@@ -37,7 +46,17 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 
+/**
+ * Props for the CommerceSidebar component.
+ */
 interface CommerceSidebarProps {
+  /**
+   * Optional object containing localized strings for the sidebar item names.
+   * If provided, it should contain a `commerce` key with further nested keys
+   * for each navigation item (e.g., `dashboard`, `products`, `orders`, `customers`,
+   * `inventory`, `categories`, `shipping`, `payments`, `discounts`, `reviews`,
+   * `analytics`, `settings`).
+   */
   dictionary?: {
     commerce?: {
       dashboard: string;
@@ -54,10 +73,20 @@ interface CommerceSidebarProps {
       settings: string;
     };
   };
+  /** The current locale string (e.g., "en", "es"), used for constructing localized links. */
   locale: string;
 }
 
-// Custom component for the collapsible button with dynamic icon
+/**
+ * A custom wrapper for the `SidebarCollapseButton` that dynamically changes its icon
+ * (PanelLeftOpen or PanelLeftClose) based on the sidebar's collapsed state,
+ * obtained from `useSidebar` context. This component is functionally identical
+ * to similar buttons used in other module sidebars.
+ *
+ * @param {object} props - Component props.
+ * @param {string} [props.className=""] - Optional additional CSS classes for the button.
+ * @returns {React.JSX.Element} The rendered collapsible button.
+ */
 function CollapsibleButton({ className = "" }) {
   const { collapsed } = useSidebar();
   
@@ -73,6 +102,37 @@ function CollapsibleButton({ className = "" }) {
   );
 }
 
+/**
+ * `CommerceSidebar` is the main navigation sidebar component for the E-commerce module.
+ * It provides structured navigation links to various e-commerce functionalities such as
+ * Dashboard, Products, Orders, Customers, Inventory, Categories, Shipping, Payments,
+ * Discounts, Reviews, Analytics, and Settings. It handles active link highlighting,
+ * integrates with an unsaved changes confirmation system, allows switching
+ * to other application modules, and supports a collapsible interface.
+ *
+ * Key Features:
+ * - Uses UI components from `@/components/ui/sidebar` for its structure.
+ * - Navigation items are grouped (Main, Inventory & Catalog, Sales & Marketing, Analytics, Configuration)
+ *   and their labels are localized using the `dictionary` prop. Default English labels
+ *   are used if the dictionary is not provided.
+ * - The `isActiveLink` internal function determines if a navigation item matches
+ *   the current route (obtained via `usePathname`) for active state highlighting.
+ * - **Unsaved Changes Integration**: Utilizes the `useUnsavedChanges` context.
+ *   The `handleNavigation` function intercepts navigation. If `hasUnsavedChanges`
+ *   is true, it prevents immediate navigation and displays an `UnsavedChangesAlert`.
+ *   Users can then choose to save changes (`handleSaveAndContinue`), discard changes
+ *   (`handleDiscardChanges`), or cancel navigation (`handleCancelNavigation`).
+ * - **Module Switcher**: A dropdown in the sidebar header allows users to navigate
+ *   to other main modules of the application (CMS, Bookings).
+ * - **Collapsible Behavior**: Employs `SidebarProvider` and the custom `CollapsibleButton`
+ *   for collapsing and expanding the sidebar.
+ *
+ * It uses `usePathname` and `useRouter` from `next/navigation` for client-side
+ * routing and determining the active link.
+ *
+ * @param {CommerceSidebarProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered CommerceSidebar component.
+ */
 export default function CommerceSidebar({ dictionary, locale }: CommerceSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();

@@ -1,3 +1,12 @@
+/**
+ * @fileoverview This file defines the ContactSection component, a client-side
+ * component that renders a visually distinct contact form section.
+ * It features a dark theme with animated background particles, uses framer-motion
+ * for entry animations, and handles form submission. Submission can be processed
+ * either via a GraphQL mutation to `/api/graphql` or through an optional callback function
+ * provided via props. The component also manages and displays submission status.
+ * Internationalization for text content is supported through a `dictionary` prop.
+ */
 'use client';
 
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
@@ -5,7 +14,31 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 
+/**
+ * Props for the ContactSection component.
+ */
 interface ContactSectionProps {
+  /**
+   * An object containing localized strings for the contact section.
+   * Expected structure:
+   * ```
+   * {
+   *   contact: {
+   *     title: string,         // Title for the contact section
+   *     description: string,   // A descriptive text displayed below the title
+   *     form: {
+   *       name: string,          // Label for the first name input field
+   *       lastName: string,      // Label for the last name input field
+   *       email: string,         // Label for the email input field
+   *       submit: string,        // Text for the submit button
+   *       namePlaceholder: string, // Placeholder for the first name input
+   *       lastNamePlaceholder: string, // Placeholder for the last name input
+   *       emailPlaceholder: string // Placeholder for the email input
+   *     }
+   *   }
+   * }
+   * ```
+   */
   dictionary: {
     contact: {
       title: string;
@@ -21,6 +54,12 @@ interface ContactSectionProps {
       };
     };
   };
+  /**
+   * Optional callback function to handle form submission.
+   * If provided, this function will be called with the form data
+   * ({ firstName, lastName, email }) instead of the default GraphQL mutation.
+   * @param data - An object containing the submitted form data.
+   */
   onSubmit?: (data: { firstName: string; lastName: string; email: string }) => void;
 }
 
@@ -37,6 +76,33 @@ const SUBMIT_CONTACT_FORM = `
   }
 `;
 
+/**
+ * `ContactSection` is a client-side component that renders a visually distinct and animated
+ * contact form section. It manages form input state, handles form submission (either via
+ * a GraphQL mutation or a provided callback), and provides visual feedback on submission status.
+ *
+ * Features:
+ * - **Styling**: Implements a dark theme with a gradient background and animated background particles.
+ * - **Animations**: Uses `framer-motion` for entry animations of the section title and form,
+ *   triggered by `react-intersection-observer`.
+ * - **State Management**:
+ *   - `formState`: Manages the values of the first name, last name, and email input fields.
+ *   - `submitStatus`: Tracks the current state of form submission ('idle', 'submitting', 'success', 'error')
+ *     and updates the submit button's appearance and text accordingly.
+ * - **Submission Handling (`handleSubmit` function)**:
+ *   - If an `onSubmit` prop (callback function) is provided, it calls this function with the form data
+ *     and then resets the form. This allows for custom submission logic outside the component.
+ *   - If `onSubmit` is not provided, it sends a GraphQL mutation (`SUBMIT_CONTACT_FORM`) to the
+ *     `/api/graphql` endpoint with the form data.
+ *   - On successful GraphQL submission, it updates `submitStatus` to 'success', resets the form,
+ *     and then redirects the user to 'https://jobs.e-voque.com/' after a short delay.
+ *   - On GraphQL error or network error, it updates `submitStatus` to 'error'.
+ * - **Internationalization**: All display text (title, description, labels, placeholders, button text)
+ *   is sourced from the `dictionary` prop.
+ *
+ * @param {ContactSectionProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered ContactSection component.
+ */
 export default function ContactSection({ dictionary, onSubmit }: ContactSectionProps) {
   const [formState, setFormState] = useState({
     firstName: '',

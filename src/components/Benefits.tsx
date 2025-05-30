@@ -1,3 +1,16 @@
+/**
+ * @fileoverview This file defines the Benefits component, a multi-section landing page
+ * component designed to showcase services and features. It includes:
+ * - A hero section with introductory content and a call to action.
+ * - An introduction section often featuring a background video.
+ * - A list of benefits, each highlighted with an icon and description.
+ * - A contact form for user inquiries.
+ * The component utilizes internationalization (i18n) through a `dictionary` prop,
+ * `framer-motion` for animations, and `react-intersection-observer` for triggering
+ * animations and other effects (like footer visibility) based on scroll position.
+ * It also contains logic to dynamically show/hide the main site footer based on
+ * how far the user has scrolled past the contact form.
+ */
 'use client';
 
 import { motion } from 'framer-motion';
@@ -13,7 +26,17 @@ import {
 import { Button } from './ui/button';
 import ContactForm from './ContactForm';
 
+/**
+ * Props for the Benefits component.
+ */
 interface BenefitsProps {
+  /**
+   * An object containing localized strings for the component.
+   * This dictionary should have a nested structure for different sections:
+   * - `hero`: Contains strings for the hero section (e.g., `tagline`, `title`, `subtitle`, `cta`).
+   * - `benefits`: Contains strings for the benefits section (e.g., general `title`, `subtitle`, and specific benefit titles like `qualityTitle`, `securityTitle`, and descriptions).
+   * - `contact`: Contains strings for the contact form section (e.g., `title`, `description`, and form field labels/placeholders like `name`, `email`, `submit`).
+   */
   dictionary: {
     hero: {
       tagline: string;
@@ -49,23 +72,58 @@ interface BenefitsProps {
       };
     };
   };
+  /** The current locale string (e.g., "en", "es"). */
   locale: string;
 }
 
+/**
+ * Represents the structure of an individual benefit item to be displayed.
+ */
 interface BenefitItem {
+  /** The title of the benefit. */
   title: string;
+  /** A description of the benefit. */
   description: string;
+  /** A ReactNode (typically an SVG icon) representing the benefit. */
   icon: React.ReactNode;
+  /** Tailwind CSS gradient color string (e.g., "from-blue-500 to-blue-700"). */
   color: string;
+  /** Tailwind CSS class for the icon's background color. */
   iconBg: string;
+  /** Accent color string (hex or Tailwind color name) used for highlights. */
   accentColor: string;
+  /** Flag indicating if this is a technology-related benefit (may influence styling). */
   isTech: boolean;
+  /** Optional Tailwind CSS class for the title text color. */
   textColor?: string;
+  /** Optional Tailwind CSS class for the description text color. */
   descriptionColor?: string;
+  /** Optional flag for technology benefits that might use a lighter theme. */
   techLight?: boolean;
+  /** `react-intersection-observer` ref and inView state for triggering animations. */
   ref: ReturnType<typeof useInView>;
 }
 
+/**
+ * The `Benefits` component serves as a feature-rich, multi-section landing page element.
+ * It orchestrates the display of a hero section, an introductory section (often with a video background),
+ * a list of benefit items, and a contact form.
+ *
+ * This component heavily utilizes `framer-motion` for animations on most of its elements,
+ * triggered by viewport visibility using `react-intersection-observer`.
+ * It also implements custom logic to control the visibility of the main site footer
+ * based on the user's scroll position relative to the contact form section.
+ *
+ * The textual content is internationalized via the `dictionary` prop.
+ *
+ * Note: This component contains a commented-out section (`cms-managed-sections`)
+ * which appears to be intended for dynamically rendering CMS-managed content.
+ *
+ * @param {BenefitsProps} props - The props for the component.
+ * @param {object} props.dictionary - An object containing localized strings for various parts of the component.
+ * @param {string} props.locale - The current locale, used for potential locale-specific logic (though not directly used in rendering in this version).
+ * @returns {React.JSX.Element} The rendered Benefits landing page component.
+ */
 export default function Benefits({ dictionary }: BenefitsProps) {
 
   const [isFlowCompleted, setIsFlowCompleted] = useState(false);

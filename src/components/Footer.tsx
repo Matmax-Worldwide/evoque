@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This file defines the main site Footer component.
+ * It is a client-side component responsible for displaying comprehensive footer
+ * information including branding, social media links, multiple navigation columns
+ * (main navigation, services, hidden/utility sections, contact info), and a bottom
+ * bar with copyright notice and legal links (privacy, terms).
+ * The component uses internationalization for its text content and lucide-react for icons.
+ */
 'use client';
 
 import Link from 'next/link';
@@ -9,7 +17,29 @@ import {
   EyeOff
 } from 'lucide-react';
 
+/**
+ * Props for the Footer component.
+ */
 interface FooterProps {
+  /**
+   * An object containing localized strings for the footer.
+   * Expected structure:
+   * ```
+   * {
+   *   nav: {
+   *     home: string,
+   *     about: string,
+   *     services: string,
+   *     contact: string
+   *   },
+   *   footer: {
+   *     rights: string,    // e.g., "All rights reserved"
+   *     privacy: string,   // e.g., "Privacy Policy"
+   *     terms: string      // e.g., "Terms of Service"
+   *   }
+   * }
+   * ```
+   */
   dictionary: {
     nav: {
       home: string;
@@ -23,9 +53,23 @@ interface FooterProps {
       terms: string;
     };
   };
+  /** The current locale string (e.g., "en", "es"), used for constructing localized links. */
   locale: string;
 }
 
+/**
+ * `Footer` is a client-side component that renders the main site footer.
+ * It includes sections for branding, social media links, various navigation columns
+ * (main site navigation, service links, potentially hidden or utility links, and contact information),
+ * and a bottom bar with the copyright notice (dynamically displaying the current year)
+ * and links to legal pages like privacy policy and terms of service.
+ *
+ * All textual content is internationalized using the `dictionary` prop.
+ * Icons are sourced from the `lucide-react` library.
+ *
+ * @param {FooterProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered site footer.
+ */
 export default function Footer({ dictionary, locale }: FooterProps) {
   const currentYear = new Date().getFullYear();
   

@@ -1,14 +1,44 @@
+/**
+ * @fileoverview This file defines the Contact component, a presentational
+ * component responsible for displaying a contact section. This section typically
+ * includes a title and a contact form. The component utilizes internationalization (i18n)
+ * for its text content and `framer-motion` along with `react-intersection-observer`
+ * for entry animations.
+ */
 'use client';
 
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { useState } from 'react';
 
+/**
+ * Props for the Contact component.
+ */
 interface ContactProps {
+  /**
+   * An object containing localized strings for the contact section.
+   * Expected structure:
+   * ```
+   * {
+   *   contact: {
+   *     title: string, // Title for the contact section
+   *     description: string, // A descriptive text (currently not used in this component version)
+   *     form: {
+   *       name: string,          // Label for the name input field
+   *       email: string,         // Label for the email input field
+   *       message?: string,       // Optional label for the message textarea
+   *       submit: string,        // Text for the submit button
+   *       namePlaceholder?: string, // Optional placeholder for the name input
+   *       emailPlaceholder?: string // Optional placeholder for the email input
+   *     }
+   *   }
+   * }
+   * ```
+   */
   dictionary: {
     contact: {
       title: string;
-      description: string;
+      description: string; // Although present in props, not actively used in this version's UI.
       form: {
         name: string;
         email: string;
@@ -21,6 +51,22 @@ interface ContactProps {
   };
 }
 
+/**
+ * The `Contact` component renders a contact section, typically including a title
+ * and a contact form.
+ *
+ * It uses `framer-motion` for animations that are triggered when the component
+ * scrolls into view, managed by `react-intersection-observer`.
+ * The form inputs (name, email, message) are managed using local React state (`formState`).
+ * The `handleChange` function updates this state on input changes.
+ * The `handleSubmit` function currently logs the form data to the console,
+ * resets the form fields, and shows a simple alert confirming submission.
+ *
+ * Text content within the component is internationalized using the `dictionary` prop.
+ *
+ * @param {ContactProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered Contact section.
+ */
 export default function Contact({ dictionary }: ContactProps) {
   const [ref, inView] = useInView({
     threshold: 0.1,
