@@ -1,37 +1,78 @@
-// Video Preloader Utility for optimized video loading
-// Inspired by Netflix and Apple's video optimization strategies
+/**
+ * @fileoverview This module provides the `VideoPreloader` class, designed for
+ * optimizing video loading. It includes features like preloading initial video chunks,
+ * caching video data (as Blobs and ObjectURLs), managing cache size and eviction,
+ * optionally using IntersectionObserver to preload videos when they enter the viewport,
+ * and attempting to select optimal video quality based on network conditions.
+ */
 
+/**
+ * Options for configuring video preloading behavior.
+ */
 interface VideoPreloadOptions {
+  /** Desired video quality. 'auto' attempts to detect optimal quality. */
   quality?: 'low' | 'medium' | 'high' | 'auto';
-  preloadAmount?: number; // MB to preload
+  /** Amount of video data to preload in megabytes (MB). */
+  preloadAmount?: number;
+  /** Future flag for enabling adaptive streaming (not fully implemented). */
   enableAdaptiveStreaming?: boolean;
+  /** Whether to use IntersectionObserver to preload videos when they become visible. */
   enableIntersectionObserver?: boolean;
+  /** Root margin for the IntersectionObserver (e.g., "200px"). */
   rootMargin?: string;
+  /** Threshold for the IntersectionObserver (0.0 to 1.0). */
   threshold?: number;
 }
 
+/**
+ * Represents an entry in the video cache.
+ */
 interface VideoCache {
+  /** The original URL of the video. */
   url: string;
+  /** The preloaded video data as a Blob. */
   blob?: Blob;
+  /** An ObjectURL created from the Blob, usable as a video source. */
   objectUrl?: string;
+  /** The quality level at which the video was preloaded. */
   quality: string;
+  /** The number of bytes preloaded for this video. */
   preloadedBytes: number;
+  /** Timestamp of the last time this cache entry was accessed. */
   lastAccessed: number;
+  /** Flag indicating if the video is currently in the process of preloading. */
   isPreloading: boolean;
 }
 
+/**
+ * Class responsible for preloading and caching video content for optimized playback.
+ */
 class VideoPreloader {
+  /** @private Map storing cached video data. Key is the video URL. */
   private cache = new Map<string, VideoCache>();
+  /** @private Set of video URLs currently in the preload queue or being preloaded. */
   private preloadQueue = new Set<string>();
+  /** @private IntersectionObserver instance for viewport-based preloading. */
   private intersectionObserver?: IntersectionObserver;
+  /** @private Maximum size of the video cache in bytes (default: 100MB). */
   private maxCacheSize = 100 * 1024 * 1024; // 100MB cache limit
+  /** @private Current total size of all blobs stored in the cache, in bytes. */
   private currentCacheSize = 0;
 
+  /**
+   * Constructs a new VideoPreloader instance.
+   * @param options - Optional configuration for the preloader.
+   */
   constructor(private options: VideoPreloadOptions = {}) {
     this.setupIntersectionObserver();
     this.setupCacheCleanup();
   }
 
+  /**
+   * Sets up the IntersectionObserver if enabled in options.
+   * The observer watches video elements and triggers preloading when they enter the viewport.
+   * @private
+   */
   private setupIntersectionObserver() {
     if (typeof window === 'undefined' || !this.options.enableIntersectionObserver) return;
 
@@ -53,6 +94,10 @@ class VideoPreloader {
     );
   }
 
+  /**
+   * Sets up a periodic interval to clean up the cache.
+   * @private
+   */
   private setupCacheCleanup() {
     // Clean up cache every 5 minutes
     setInterval(() => {
@@ -60,6 +105,12 @@ class VideoPreloader {
     }, 5 * 60 * 1000);
   }
 
+  /**
+   * Cleans the cache by removing entries older than 30 minutes
+   * and then, if still over `maxCacheSize`, removes the least recently accessed entries
+   * until the cache size is within limits.
+   * @private
+   */
   private cleanupCache() {
     const now = Date.now();
     const maxAge = 30 * 60 * 1000; // 30 minutes
@@ -83,6 +134,11 @@ class VideoPreloader {
     }
   }
 
+  /**
+   * Removes a video from the cache, revoking its ObjectURL and updating cache size.
+   * @private
+   * @param url - The URL of the video to remove from the cache.
+   */
   private removeFromCache(url: string) {
     const cache = this.cache.get(url);
     if (cache) {
@@ -96,6 +152,12 @@ class VideoPreloader {
     }
   }
 
+  /**
+   * Determines the optimal video quality based on current options, network conditions,
+   * and screen size.
+   * @private
+   * @returns A string representing the chosen quality ('low', 'medium', or 'high').
+   */
   private getOptimalQuality(): string {
     if (this.options.quality !== 'auto') {
       return this.options.quality || 'medium';
@@ -125,6 +187,15 @@ class VideoPreloader {
     return 'low';
   }
 
+  /**
+   * Fetches a specific chunk of a video file using Range requests.
+   * @private
+   * @param url - The URL of the video to fetch.
+   * @param start - The starting byte of the range.
+   * @param end - The ending byte of the range.
+   * @returns A Promise that resolves to a Blob containing the video chunk.
+   * @throws If the fetch request fails.
+   */
   private async fetchVideoChunk(url: string, start: number, end: number): Promise<Blob> {
     const response = await fetch(url, {
       headers: {
@@ -140,6 +211,14 @@ class VideoPreloader {
     return response.blob();
   }
 
+  /**
+   * Preloads a video by fetching an initial chunk and caching it.
+   * If the video is already cached sufficiently, it updates its last accessed time.
+   * Converts S3 URLs to use an API route for potentially optimized delivery.
+   * @param url - The URL of the video to preload.
+   * @param options - Optional partial VideoPreloadOptions to override defaults for this specific preload.
+   * @returns A Promise that resolves to an ObjectURL for the preloaded video chunk, or null if preloading fails or is skipped.
+   */
   async preloadVideo(url: string, options?: Partial<VideoPreloadOptions>): Promise<string | null> {
     if (!url || this.preloadQueue.has(url)) return null;
 
@@ -204,6 +283,13 @@ class VideoPreloader {
     }
   }
 
+  /**
+   * Converts direct S3 URLs to an API route for potentially optimized delivery or access control.
+   * If the URL is not an S3 URL matching the pattern, it's returned unchanged.
+   * @private
+   * @param url - The video URL to process.
+   * @returns The processed URL, potentially pointing to an API route.
+   */
   private convertS3UrlToApiRoute(url: string): string {
     if (!url) return url;
     
@@ -219,18 +305,33 @@ class VideoPreloader {
     return url;
   }
 
+  /**
+   * Starts observing a video element with the IntersectionObserver.
+   * When the element enters the viewport, its video source will be preloaded.
+   * @param videoElement - The HTMLVideoElement to observe.
+   */
   observeVideo(videoElement: HTMLVideoElement) {
     if (this.intersectionObserver) {
       this.intersectionObserver.observe(videoElement);
     }
   }
 
+  /**
+   * Stops observing a video element with the IntersectionObserver.
+   * @param videoElement - The HTMLVideoElement to stop observing.
+   */
   unobserveVideo(videoElement: HTMLVideoElement) {
     if (this.intersectionObserver) {
       this.intersectionObserver.unobserve(videoElement);
     }
   }
 
+  /**
+   * Retrieves the ObjectURL for a cached video, if available.
+   * Updates the last accessed time for the cache entry.
+   * @param url - The original URL of the video.
+   * @returns The ObjectURL string if the video is cached, otherwise null.
+   */
   getCachedVideoUrl(url: string): string | null {
     const cache = this.cache.get(url);
     if (cache && cache.objectUrl) {
@@ -240,11 +341,22 @@ class VideoPreloader {
     return null;
   }
 
+  /**
+   * Checks if a video is currently being preloaded or is in the preload queue.
+   * @param url - The URL of the video.
+   * @returns True if the video is preloading, false otherwise.
+   */
   isVideoPreloading(url: string): boolean {
     const cache = this.cache.get(url);
     return cache?.isPreloading || this.preloadQueue.has(url);
   }
 
+  /**
+   * Gets the preload progress for a video.
+   * @param url - The URL of the video.
+   * @returns A number between 0 and 1 representing the preload progress (1 for fully preloaded chunk).
+   *          Returns 0 if the video is not cached or preloading.
+   */
   getPreloadProgress(url: string): number {
     const cache = this.cache.get(url);
     if (!cache) return 0;
@@ -253,7 +365,12 @@ class VideoPreloader {
     return Math.min(cache.preloadedBytes / targetSize, 1);
   }
 
-  // Preload multiple videos in priority order
+  /**
+   * Preloads multiple videos, potentially in parallel based on priority.
+   * @param urls - An array of video URLs to preload.
+   * @param priority - The priority for preloading ('high', 'medium', or 'low').
+   *                   Higher priority may use more concurrent downloads.
+   */
   async preloadVideos(urls: string[], priority: 'high' | 'medium' | 'low' = 'medium'): Promise<void> {
     const concurrency = priority === 'high' ? 3 : priority === 'medium' ? 2 : 1;
     const chunks = [];
@@ -269,7 +386,9 @@ class VideoPreloader {
     }
   }
 
-  // Clear all cached videos
+  /**
+   * Clears all videos from the cache and resets the current cache size.
+   */
   clearCache() {
     for (const [url] of this.cache.entries()) {
       this.removeFromCache(url);
@@ -277,7 +396,10 @@ class VideoPreloader {
     this.currentCacheSize = 0;
   }
 
-  // Get cache statistics
+  /**
+   * Gets statistics about the current state of the video cache.
+   * @returns An object containing total entries, total size, max size, and utilization percentage.
+   */
   getCacheStats() {
     return {
       totalEntries: this.cache.size,
@@ -287,6 +409,10 @@ class VideoPreloader {
     };
   }
 
+  /**
+   * Cleans up resources used by the VideoPreloader, such as disconnecting
+   * the IntersectionObserver and clearing the cache.
+   */
   destroy() {
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
@@ -295,7 +421,12 @@ class VideoPreloader {
   }
 }
 
-// Global video preloader instance
+/**
+ * Global, pre-configured instance of the VideoPreloader.
+ * This instance can be imported and used directly for video preloading tasks.
+ * Default options aim for a balance of auto quality detection, reasonable preload amount,
+ * and viewport-aware preloading.
+ */
 export const videoPreloader = new VideoPreloader({
   quality: 'auto',
   preloadAmount: 3, // 3MB
@@ -305,4 +436,7 @@ export const videoPreloader = new VideoPreloader({
   threshold: 0.1
 });
 
+/**
+ * Exports the VideoPreloader class for creating custom instances if needed.
+ */
 export default VideoPreloader; 

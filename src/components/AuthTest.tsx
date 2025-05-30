@@ -5,8 +5,40 @@ import { useAuth } from '@/hooks/useAuth';
 import { createAuthHeaders, getSessionToken } from '@/lib/auth-header';
 
 /**
- * Test component to verify authorization header functionality
- * This component can be temporarily added to any page to test auth
+ * @fileoverview This file defines the AuthTest component, a developer tool
+ * designed for testing and verifying client-side authentication status and
+ * the correct setup of authorization headers for GraphQL API requests.
+ * It should be used for debugging purposes during development.
+ */
+'use client';
+
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { createAuthHeaders, getSessionToken } from '@/lib/auth-header';
+
+/**
+ * The `AuthTest` component provides a user interface for developers to test
+ * client-side authentication and the functionality of authorization headers.
+ *
+ * It uses the `useAuth` hook to access the current authentication state (user, token, isAuthenticated).
+ *
+ * Key functionalities include:
+ * - Displaying current authentication status (user email, role, token presence, session cookie).
+ * - A button to trigger the `testAuthHeader` function.
+ *
+ * The `testAuthHeader` function performs several checks:
+ *   1. Verifies the presence of a session token in browser cookies using `getSessionToken`.
+ *   2. Checks if the authentication context (`useAuth`) contains a token and reflects an authenticated state.
+ *   3. Constructs authorization headers using `createAuthHeaders`.
+ *   4. Makes a test GraphQL query to the `/api/graphql` endpoint (specifically a `me` query to fetch current user data).
+ *   5. Updates the UI with the outcome of these tests (success with user data, GraphQL error, or other errors).
+ *
+ * If the user is not authenticated according to `useAuth`, the component displays a message
+ * prompting the user to log in, instead of the detailed test UI.
+ *
+ * This component does not accept any props.
+ *
+ * @returns React.JSX.Element - The rendered AuthTest component UI.
  */
 export function AuthTest() {
   const { user, token, isAuthenticated } = useAuth();

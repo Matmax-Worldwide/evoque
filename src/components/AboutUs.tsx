@@ -1,9 +1,28 @@
+/**
+ * @fileoverview This file defines the AboutUs component, which displays
+ * an "About Us" section tailored for Teleperformance. It highlights career
+ * benefits and includes a call to action for potential job applicants.
+ * The component uses framer-motion for animations and react-intersection-observer
+ * to trigger animations when the component comes into view.
+ */
 'use client';
 
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { PhoneIcon, BriefcaseIcon, AcademicCapIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
+/**
+ * The `AboutUs` component is a presentational component designed to showcase
+ * information about career opportunities and benefits at Teleperformance.
+ *
+ * It utilizes `framer-motion` for entry animations of its main sections and
+ * individual benefit cards. These animations are triggered when the component
+ * scrolls into the viewport, managed by the `react-intersection-observer` hook.
+ *
+ * This component does not accept any props.
+ *
+ * @returns React.JSX.Element - The rendered About Us section.
+ */
 export default function AboutUs() {
   const { ref, inView } = useInView({
     threshold: 0.1,

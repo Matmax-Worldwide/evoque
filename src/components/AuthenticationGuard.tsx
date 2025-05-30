@@ -1,3 +1,9 @@
+/**
+ * @fileoverview This file defines the AuthenticationGuard component, a client-side
+ * guard used to protect child components or routes from unauthenticated access.
+ * It checks the user's authentication status and redirects to a login page if
+ * the user is not authenticated.
+ */
 'use client';
 
 import { useEffect, useState, ReactNode } from 'react';
@@ -9,6 +15,30 @@ interface AuthenticationGuardProps {
   redirectTo?: string;
 }
 
+/**
+ * `AuthenticationGuard` is a client-side wrapper component that protects its
+ * `children` from unauthenticated access.
+ *
+ * Behavior:
+ * - It utilizes the `useAuth` hook to determine the user's authentication status (`isAuthenticated`)
+ *   and whether the authentication state is still loading (`isLoading`).
+ * - It maintains an internal `isChecking` state to manage its own readiness after `useAuth` finishes loading.
+ * - If `isLoading` from `useAuth` or the internal `isChecking` state is true, it displays a loading indicator.
+ * - Once loading is complete, if the user is not authenticated (`!isAuthenticated`), it redirects
+ *   them to the specified `redirectTo` path. The redirection path is automatically localized
+ *   using the current locale obtained from `useParams`.
+ * - If the user is authenticated, it renders the `children` components.
+ * - If not authenticated and after the redirect attempt, it renders `null`.
+ *
+ * It uses `useRouter` from `next/navigation` for client-side redirection and
+ * `useParams` to get the current locale for constructing localized redirect paths.
+ *
+ * @param {AuthenticationGuardProps} props - The props for the component.
+ * @param {ReactNode} props.children - The content or components to render if the user is authenticated.
+ * @param {string} [props.redirectTo='/login'] - Optional. The path to redirect unauthenticated users to.
+ *                                               Defaults to '/login'. This path will be prefixed with the current locale.
+ * @returns {React.JSX.Element | null} The children if authenticated, a loading indicator, or null.
+ */
 const AuthenticationGuard = ({ children, redirectTo = '/login' }: AuthenticationGuardProps) => {
   const { isAuthenticated, isLoading } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
