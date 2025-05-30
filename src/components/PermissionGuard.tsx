@@ -1,3 +1,10 @@
+/**
+ * @fileoverview This file defines the PermissionGuard component, a client-side
+ * higher-order component used to protect content or routes based on user roles
+ * and/or specific permissions. It provides a fallback UI for users who do not
+ * meet the criteria and includes a debug panel (available in non-production
+ * environments) to inspect permission checks.
+ */
 'use client';
 
 import { ReactNode, useState } from 'react';
@@ -5,26 +12,64 @@ import { usePermission, RoleName } from '@/hooks/usePermission';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ShieldIcon } from 'lucide-react';
 
+/**
+ * Props for the PermissionGuard component.
+ */
 interface PermissionGuardProps {
+  /** Optional. A single permission string required to access the content. */
   permission?: string;
+  /** Optional. An array of permission strings. Behavior depends on `requireAll`. */
   permissions?: string[];
+  /** Optional. A single user role (`RoleName`) required to access the content. */
   role?: RoleName;
+  /** Optional. An array of user roles (`RoleName`). If any match, access may be granted (unless `requireAll` is used in a specific context, though typically roles are OR'd). */
   roles?: RoleName[];
+  /**
+   * Optional (default: `false`). If `true` and `permissions` array is provided,
+   * the user must have *all* specified permissions. If `false`, the user needs
+   * at least *one* of the specified permissions. This prop primarily applies to the `permissions` array.
+   * For roles, typically any matching role grants access.
+   */
   requireAll?: boolean;
+  /** Optional. A ReactNode to display if the user does not meet the required permissions/roles. If not provided, a default alert message is shown. */
   fallback?: ReactNode;
+  /** The content to be rendered if the user meets the required permissions/roles. */
   children: ReactNode;
 }
 
 /**
- * PermissionGuard - Componente que protege su contenido basado en permisos
+ * `PermissionGuard` is a client-side component that conditionally renders its `children`
+ * based on the current user's roles and/or permissions. It utilizes the `usePermission`
+ * hook to fetch user permissions and perform checks.
+ *
+ * Access Control Logic:
+ * 1. **Loading State**: While `isLoading` from `usePermission` is true, it displays a "Cargando permisos..." message.
+ * 2. **Role Checks (Priority)**:
+ *    - If a single `role` prop is provided, it checks if the user has that specific role.
+ *    - If `roles` array is provided and no access was granted by a single `role`, it checks if the user has *any* of the roles in the array.
+ * 3. **Permission Checks**: If no access is granted by role checks:
+ *    - If a single `permission` prop is provided, it checks for that specific permission.
+ *    - If a `permissions` array is provided:
+ *      - If `requireAll` is true, it checks if the user has *all* permissions in the array.
+ *      - If `requireAll` is false (default), it checks if the user has *any* permission in the array.
+ * 4. **Default Access**: If no `role`, `roles`, `permission`, or `permissions` props are provided, access is granted by default.
+ *
+ * Fallback UI:
+ * - If access is denied, it renders the custom `fallback` component if provided.
+ * - Otherwise, it displays a default `Alert` component with a "No tienes permisos..." message.
+ *
+ * Debug Panel (Non-Production Only):
+ * - A "Debug Permissions" button is shown in the bottom-left corner in non-production environments.
+ * - Clicking this button toggles the visibility of a `DebugPanel`.
+ * - The `DebugPanel` displays:
+ *   - The roles/permissions being checked for by the `PermissionGuard` instance.
+ *   - The current user's actual permissions (from `usePermission`).
+ *   - The results of individual role and permission checks.
+ *   - The final access decision (GRANTED/DENIED).
  * 
- * @param permission - Un permiso único a verificar
- * @param permissions - Lista de permisos a verificar
- * @param role - Un rol único a verificar
- * @param roles - Lista de roles a verificar
- * @param requireAll - Si es true, el usuario debe tener todos los permisos; si es false, solo uno (default: false)
- * @param fallback - Componente a mostrar si el usuario no tiene permisos
- * @param children - Contenido a mostrar si el usuario tiene permisos
+ * @param {PermissionGuardProps} props - The props for the component.
+ * @returns {React.JSX.Element | ReactNode | null} The children if access is granted,
+ *          the fallback UI if access is denied, or a loading indicator.
  */
 export default function PermissionGuard({
   permission,

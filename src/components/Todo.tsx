@@ -1,3 +1,10 @@
+/**
+ * @fileoverview This file defines the Todo component, a client-side application
+ * for managing tasks. It supports CRUD (Create, Read, Update, Delete) operations
+ * for tasks, allows associating tasks with projects, and provides filtering
+ * capabilities. The component uses Apollo Client for GraphQL communication with
+ * a backend server to persist and retrieve task and project data.
+ */
 'use client';
 
 import { useState } from 'react';
@@ -6,6 +13,8 @@ import { format } from 'date-fns';
 import { PlusIcon, TrashIcon, CheckIcon } from 'lucide-react';
 
 // GraphQL queries and mutations
+
+/** GraphQL query to fetch all tasks along with their associated project details. */
 const GET_TASKS = gql`
   query GetTasks {
     tasks {
@@ -26,6 +35,7 @@ const GET_TASKS = gql`
   }
 `;
 
+/** GraphQL mutation to create a new task. */
 const CREATE_TASK = gql`
   mutation CreateTask($input: CreateTaskInput!) {
     createTask(input: $input) {
@@ -40,6 +50,7 @@ const CREATE_TASK = gql`
   }
 `;
 
+/** GraphQL mutation to update an existing task (e.g., its status or title). */
 const UPDATE_TASK = gql`
   mutation UpdateTask($id: ID!, $input: UpdateTaskInput!) {
     updateTask(id: $id, input: $input) {
@@ -51,13 +62,14 @@ const UPDATE_TASK = gql`
   }
 `;
 
+/** GraphQL mutation to delete a task by its ID. */
 const DELETE_TASK = gql`
   mutation DeleteTask($id: ID!) {
     deleteTask(id: $id)
   }
 `;
 
-// Updated projects query
+/** GraphQL query to fetch all available projects, typically for populating a dropdown. */
 const GET_PROJECTS = gql`
   query GetProjects {
     projects {
@@ -67,28 +79,97 @@ const GET_PROJECTS = gql`
   }
 `;
 
-// Types for tasks
+/**
+ * Represents a Task object with its properties.
+ */
 interface Task {
+  /** Unique identifier for the task. */
   id: string;
+  /** The title or name of the task. */
   title: string;
+  /** Optional detailed description of the task. */
   description?: string;
+  /** Current status of the task. */
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  /** Optional due date for the task (ISO string format). */
   dueDate?: string;
+  /** Priority level of the task (e.g., 1 for Low, 2 for Medium, 3 for High). */
   priority: number;
+  /** Optional ID of the project this task belongs to. */
   projectId?: string;
+  /** Optional associated project details. */
   project?: {
     id: string;
     name: string;
   };
+  /** Timestamp of when the task was created (ISO string format). */
   createdAt: string;
+  /** Timestamp of the last update to the task (ISO string format). */
   updatedAt: string;
 }
 
+/**
+ * Represents a Project object, typically used for associating tasks.
+ */
 interface Project {
+  /** Unique identifier for the project. */
   id: string;
+  /** Name of the project. */
   name: string;
 }
 
+/**
+ * `Todo` is a client-side component that provides a full-featured Todo list application interface.
+ * It allows users to create, view, update (status), and delete tasks. Tasks can be associated
+ * with projects, and the list of tasks can be filtered by status.
+ *
+ * State Management:
+ * - `newTask`: Object holding the data for a new task being entered in the form.
+ * - `projects`: Array of `Project` objects, fetched from the backend, used to populate the project selection dropdown.
+ * - `filter`: String indicating the current filter applied to the task list (e.g., 'ALL', 'COMPLETED').
+ *
+ * GraphQL Interaction (using Apollo Client):
+ * - `useQuery(GET_TASKS)`: Fetches all tasks. Includes `refetch` function to refresh the list after mutations.
+ * - `useQuery(GET_PROJECTS)`: Fetches all projects. `onCompleted` handler populates the `projects` state.
+ *   Uses `fetchPolicy: 'network-only'` to ensure fresh project data.
+ * - `useMutation(CREATE_TASK)`: For creating new tasks. `onCompleted` clears the form and refetches tasks.
+ *   `onError` logs errors and shows an alert.
+ * - `useMutation(UPDATE_TASK)`: For updating task status. `onCompleted` refetches tasks.
+ *   `onError` logs errors and shows an alert.
+ * - `useMutation(DELETE_TASK)`: For deleting tasks. `onCompleted` refetches tasks.
+ *   `onError` logs errors and shows an alert.
+ *
+ * Form Handling:
+ * - `handleInputChange`: Updates the `newTask` state as the user types in the form fields.
+ * - `handleCreateTask`: Validates that the task title is provided. Constructs the input object
+ *   (parsing priority, handling optional fields) and calls the `createTask` mutation.
+ *
+ * Task Actions:
+ * - `handleStatusChange`: Called when a task's status is changed via the dropdown in the task item
+ *   or when the "Mark as completed" button is clicked. Calls the `updateTask` mutation.
+ * - `handleDeleteTask`: Shows a `confirm()` dialog before calling the `deleteTask` mutation.
+ *
+ * UI Features:
+ * - **Filtering**: Buttons allow users to filter the task list by status ('ALL', 'NOT_STARTED', etc.).
+ *   The `filteredTasks` memoized variable holds the tasks matching the current `filter`.
+ * - **New Task Form**: A form with fields for title, description, due date, priority (select dropdown),
+ *   and project (select dropdown populated from `projects` state).
+ * - **Task List Rendering**:
+ *   - Displays tasks in a list format.
+ *   - Shows task title, description (if any), status (with a colored badge using `getStatusColor`),
+ *     priority (with a label and color using `getPriorityLabel` and `getPriorityColor`),
+ *     associated project name, creation date, and due date (formatted using `date-fns`).
+ *   - Provides controls for each task: a "Mark as completed" button (if not already completed) and a delete button.
+ *   - Allows changing the status of non-completed/non-cancelled tasks via a dropdown.
+ * - **Loading/Error States**: Displays messages for loading tasks or if an error occurs during the initial task fetch.
+ *
+ * Helper Functions:
+ * - `getStatusColor`: Returns Tailwind CSS classes for styling status badges based on the task status.
+ * - `getPriorityLabel`: Returns a user-friendly string for the priority level (e.g., "Low", "Medium", "High").
+ * - `getPriorityColor`: Returns Tailwind CSS text color classes for styling priority labels.
+ *
+ * @returns {React.JSX.Element} The rendered Todo list application UI.
+ */
 export default function Todo() {
   const [newTask, setNewTask] = useState({
     title: '',

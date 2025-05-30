@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This file defines the PageContent component, a client-side
+ * component responsible for managing a full-page scrolling experience. It orchestrates
+ * navigation between different landing page sections (Hero, Benefits, Contact)
+ * using mouse wheel, keyboard, and touch events. It features smooth scrolling,
+ * section transition animations via framer-motion, a fixed navigation bar,
+ * a visual progress indicator, and synchronization with URL hash fragments.
+ */
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -8,11 +16,56 @@ import Contact from './Contact';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dictionary } from '../app/i18n';
 
+/**
+ * Props for the PageContent component.
+ */
 interface PageContentProps {
+  /** The current locale string (e.g., "en", "es"), passed down to child components. */
   locale: string;
+  /** The dictionary object containing localized strings, passed down to child components. */
   dictionary: Dictionary;
 }
 
+/**
+ * `PageContent` is a client-side component that orchestrates a full-page scrolling
+ * experience. It manages a series of sections (Hero, Benefits, Contact) and allows
+ * users to navigate between them using mouse wheel, keyboard arrows, or touch swipes.
+ *
+ * Core Functionalities:
+ * - **Section Definition**: The `sections` array (defined using `useMemo`) holds the
+ *   configuration for each page section, including its ID and the component to render.
+ *   Child components (`Hero`, `Benefits`, `Contact`) receive the `locale` and `dictionary` props.
+ * - **State Management**:
+ *   - `activeSection`: An integer representing the index of the currently visible section.
+ *   - `isScrolling`: A boolean flag used as a debounce mechanism to prevent rapid
+ *     section changes during scroll or swipe actions.
+ * - **Event Handling for Navigation**:
+ *   - `handleWheel`: Listens to mouse wheel events to navigate up/down sections.
+ *   - `handleKeyDown`: Listens for ArrowUp, ArrowDown, PageUp, and PageDown keys for navigation.
+ *   - `handleTouchStart` & `handleTouchEnd`: Manage touch swipe gestures for navigation on mobile devices.
+ *   All navigation handlers update `activeSection` and set `isScrolling` temporarily.
+ * - **URL Hash Synchronization**:
+ *   - An effect updates `window.location.hash` to match the ID of the `activeSection`
+ *     when it changes.
+ *   - `handleHashChange` listens to `hashchange` browser events (e.g., from clicking
+ *     a link with a hash or browser back/forward buttons) and updates `activeSection` accordingly.
+ *     This also handles initial hash state on page load.
+ * - **Smooth Scrolling**: A `useEffect` hook monitors `activeSection`. When it changes,
+ *   it uses `scrollIntoView({ behavior: 'smooth' })` on the corresponding section's DOM element
+ *   (referenced via `sectionRefs`) to smoothly scroll the new section into view.
+ * - **Fixed Navbar**: Includes the `Navbar` component, which is fixed at the top of the page.
+ * - **Progress Indicator**: Displays a vertical series of dots on the right side of the screen,
+ *   highlighting the dot corresponding to the `activeSection`, allowing users to see their
+ *   current position and click to navigate.
+ * - **Animations**: Uses `framer-motion` (`AnimatePresence` and `motion.section` with `sectionVariants`)
+ *   to apply transition animations (opacity and y-translation) when sections change.
+ *
+ * It uses `useRef` to store an array of references (`sectionRefs`) to the DOM elements of each
+ * section, which is essential for the `scrollIntoView` functionality.
+ *
+ * @param {PageContentProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered full-page scrolling container with its sections.
+ */
 export default function PageContent({ locale, dictionary }: PageContentProps) {
   const [activeSection, setActiveSection] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);

@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This file defines the Services component, a presentational
+ * client-side component designed to showcase a list of services. It typically includes
+ * a main title, a grid of individual service cards with icons, descriptions, and
+ * placeholder images, and a featured service section. The component uses
+ * internationalization for its text content and `framer-motion` along with
+ * `react-intersection-observer` for entry animations.
+ */
 'use client';
 
 import { motion } from 'framer-motion';
@@ -9,7 +17,38 @@ import {
   ShieldExclamationIcon 
 } from '@heroicons/react/24/outline';
 
+/**
+ * Props for the Services component.
+ */
 interface ServicesProps {
+  /**
+   * An object containing localized strings for the services section.
+   * Expected structure:
+   * ```
+   * {
+   *   services: {
+   *     title: string, // Main title for the services section
+   *     medical: {
+   *       title: string,       // Title for the medical service
+   *       description: string  // Description for the medical service
+   *     },
+   *     legal: {
+   *       title: string,       // Title for the legal service
+   *       description: string  // Description for the legal service
+   *     },
+   *     business: {
+   *       title: string,       // Title for the business service
+   *       description: string  // Description for the business service
+   *     },
+   *     emergency: {
+   *       title: string,       // Title for the emergency service
+   *       description: string  // Description for the emergency service
+   *     }
+   *     // ... potentially other service categories
+   *   }
+   * }
+   * ```
+   */
   dictionary: {
     services: {
       title: string;
@@ -33,6 +72,31 @@ interface ServicesProps {
   };
 }
 
+/**
+ * The `Services` component is a presentational client-side component that displays
+ * a list of services in a visually appealing grid format, along with a featured
+ * service section. It utilizes animations for enhanced user experience.
+ *
+ * Content and Structure:
+ * - A main title for the services section, animated on view.
+ * - A grid of service cards. Each card in the `servicesList` array includes:
+ *   - An `icon` (ReactNode, typically an SVG from Heroicons).
+ *   - A `title` (localized string).
+ *   - A `description` (localized string).
+ *   - `color` and `iconBg` for styling the card's gradient background and icon background.
+ *   - An `image` placeholder (ReactNode), which is currently a styled div with an SVG icon
+ *     and a text label indicating it's an image placeholder (e.g., "Medical Image").
+ *   - A "Learn more" button (currently not functional, for UI demonstration).
+ * - The service cards are animated with a staggered effect using `framer-motion` when they
+ *   scroll into view (managed by `useInView` from `react-intersection-observer`).
+ * - A "Medical Interpretation Focus" section, which is a statically defined promotional block
+ *   highlighting medical interpretation services, also animated on view.
+ *
+ * All textual content (titles, descriptions) is internationalized via the `dictionary` prop.
+ *
+ * @param {ServicesProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered Services section.
+ */
 export default function Services({ dictionary }: ServicesProps) {
   const [ref, inView] = useInView({
     threshold: 0.1,

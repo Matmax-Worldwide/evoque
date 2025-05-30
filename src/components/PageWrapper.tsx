@@ -1,3 +1,9 @@
+/**
+ * @fileoverview This file defines the PageWrapper component, a client-side component
+ * responsible for rendering page content composed of CMS sections. It also provides
+ * an in-place editing experience when activated via a URL parameter (`?edit=true`),
+ * allowing users to add, remove, and reorder sections on a page.
+ */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,29 +20,70 @@ import {
   RefreshCwIcon
 } from 'lucide-react';
 
+/**
+ * Props for the PageWrapper component.
+ */
 interface PageWrapperProps {
+  /**
+   * An array of objects defining the sections to be rendered on the page.
+   * Each object should have:
+   *  - `id`: A unique identifier for the section instance on the page.
+   *  - `sectionId`: The identifier of the CMS section definition to render.
+   *  - `order`: Optional number indicating the order of the section on the page.
+   */
   pageSections: Array<{
     id: string;
     sectionId: string;
     order?: number;
   }>;
+  /** Optional string, the unique ID of the current page being wrapped/edited. */
   pageId?: string;
+  /** Optional string, the slug of the current page, used for display in edit mode. */
   pageSlug?: string;
+  /**
+   * Optional ReactNode. If provided, this content is rendered if no `pageSections`
+   * are available and the component is not in edit mode.
+   */
   children?: React.ReactNode;
 }
 
+/**
+ * `PageWrapper` is a client-side component that serves a dual role:
+ * 1. **Display Mode**: Renders a list of CMS sections that constitute a page.
+ * 2. **Edit Mode**: Provides an in-place editing interface to manage these sections
+ *    (add, remove, reorder), triggered by a `?edit=true` URL search parameter.
+ *
+ * It uses `useSearchParams` to detect edit mode, `ManageableSection` to render
+ * individual sections (which can also enter an editing state for their internal components),
+ * and `cmsOperations` for fetching available sections and potentially saving changes.
+ *
+ * @param {PageWrapperProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered page content, either in display or edit mode.
+ */
 export default function PageWrapper({ pageSections = [], pageSlug, children }: PageWrapperProps) {
   const searchParams = useSearchParams();
   const [isEditMode, setIsEditMode] = useState(false);
   const [sections, setSections] = useState(pageSections);
+  /** State for storing all CMS sections available to be added to the page. */
   const [availableSections, setAvailableSections] = useState<Array<{id: string, sectionId: string, name: string}>>([]);
+  /** State to indicate if available sections are currently being loaded. */
   const [isLoading, setIsLoading] = useState(false);
+  /** State to indicate if changes are currently being saved. */
   const [isSaving, setIsSaving] = useState(false);
+  /** State to control the visibility of the "Add Section" modal. */
   const [showAddSection, setShowAddSection] = useState(false);
+  /** State for displaying success or error notifications after save attempts. */
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  /**
+   * State to track which sections have pending changes that need to be saved.
+   * Keys are section IDs (or a special format for removed sections), value is boolean.
+   */
   const [sectionChanges, setSectionChanges] = useState<Record<string, boolean>>({});
   
-  // Detectar el parámetro de edición en la URL
+  /**
+   * Effect to detect the `?edit=true` URL search parameter.
+   * If present, it sets `isEditMode` to true and triggers loading of available sections.
+   */
   useEffect(() => {
     const editParam = searchParams.get('edit');
     setIsEditMode(editParam === 'true');
@@ -47,7 +94,10 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     }
   }, [searchParams]);
   
-  // Cargar todas las secciones disponibles para añadir a la página
+  /**
+   * Fetches all available CMS sections from the backend using `cmsOperations.getAllCMSSections`.
+   * Used to populate the "Add Section" modal in edit mode.
+   */
   const loadAvailableSections = async () => {
     try {
       setIsLoading(true);
@@ -55,9 +105,9 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
       
       if (Array.isArray(sectionsData)) {
         const formattedSections = sectionsData.map(section => ({
-          id: section.id,
-          sectionId: section.sectionId,
-          name: section.name || section.sectionId
+          id: section.id, // This is the CMSSection's own database ID
+          sectionId: section.sectionId, // This is the user-defined identifier for the section type
+          name: section.name || section.sectionId // Display name for the section
         }));
         setAvailableSections(formattedSections);
       }
@@ -68,7 +118,12 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     }
   };
   
-  // Manejar cambios en los componentes de una sección
+  /**
+   * Callback function passed to `ManageableSection` to indicate that
+   * a section's internal content (components) has changed.
+   * Marks the section as having pending changes in `sectionChanges`.
+   * @param sectionId - The `sectionId` (identifier for the section type) of the modified section.
+   */
   const handleSectionChange = useCallback((sectionId: string) => {
     setSectionChanges(prev => ({
       ...prev,
@@ -76,11 +131,16 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     }));
   }, []);
   
-  // Añadir una sección a la página
+  /**
+   * Adds a new section to the page's section list in edit mode.
+   * A temporary unique ID is generated for the new section instance.
+   * @param sectionData - An object containing `id` (CMSSection's DB ID) and `sectionId` (section type identifier)
+   *                      of the section definition to add.
+   */
   const addSection = (sectionData: {id: string, sectionId: string}) => {
     const newSection = {
-      id: `temp-${Date.now()}`, // ID temporal
-      sectionId: sectionData.sectionId,
+      id: `temp-${Date.now()}`, // Temporary unique ID for this instance on the page
+      sectionId: sectionData.sectionId, // The type of section to render
       order: sections.length
     };
     
@@ -90,11 +150,15 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     // Marcar como cambiada
     setSectionChanges(prev => ({
       ...prev,
-      [sectionData.sectionId]: true
+      [sectionData.sectionId]: true // Track that this type of section might need its component list saved
     }));
   };
   
-  // Eliminar una sección de la página
+  /**
+   * Removes a section from the page's section list at the given index in edit mode.
+   * Marks the removal as a change to be saved.
+   * @param index - The index of the section to remove from the `sections` array.
+   */
   const removeSection = (index: number) => {
     const updatedSections = [...sections];
     const removedSection = updatedSections.splice(index, 1)[0];
@@ -104,12 +168,17 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     if (removedSection) {
       setSectionChanges(prev => ({
         ...prev,
-        [`removed-${removedSection.id}`]: true
+        [`removed-${removedSection.id}`]: true // Track removal for persistence
       }));
     }
   };
   
-  // Mover una sección arriba o abajo
+  /**
+   * Moves a section up or down in the page's section list in edit mode.
+   * Updates the `order` property of all affected sections and marks them as changed.
+   * @param index - The current index of the section to move.
+   * @param direction - Either 'up' or 'down'.
+   */
   const moveSection = (index: number, direction: 'up' | 'down') => {
     if (
       (direction === 'up' && index === 0) ||
@@ -135,7 +204,7 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     
     // Marcar todos como cambiados porque el orden ha cambiado
     const changes = reorderedSections.reduce((acc, section) => {
-      acc[section.sectionId] = true;
+      acc[section.sectionId] = true; // Track that these sections (by type) might need re-saving due to order change
       return acc;
     }, {} as Record<string, boolean>);
     
@@ -145,13 +214,28 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     }));
   };
   
-  // Guardar todos los cambios
+  /**
+   * Simulates saving all pending changes to the page structure and section content.
+   * In a real implementation, this would involve API calls to persist:
+   * - The new order and list of sections associated with the `pageId`.
+   * - Any changes to components within sections that were marked in `sectionChanges`.
+   * Displays a success or error notification.
+   */
   const saveChanges = async () => {
     setIsSaving(true);
     
     try {
-      // Aquí implementaríamos la lógica para guardar los cambios
-      // Tendríamos que llamar a una API para actualizar las secciones de la página
+      // TODO: Implement actual API calls to save:
+      // 1. The `sections` array (order and section IDs) associated with `pageId`.
+      //    This might involve updating a Page record with its new section associations.
+      // 2. For each sectionId in `Object.keys(sectionChanges)` where value is true (and not 'removed-'),
+      //    potentially re-save the components of that `ManageableSection` if its internal save is not automatic.
+      //    The current `handleSectionChange` marks a sectionId when its components change.
+      //    The `ManageableSection` itself might handle its own component saving via cmsOperations.saveSectionComponents.
+      //    This `saveChanges` function would then primarily be for the page's structure (section list and order).
+      console.log('Simulating save for page structure:', sections);
+      console.log('Tracked section content changes (sectionId: true if components changed):', sectionChanges);
+
       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulación
       
       setNotification({
@@ -175,8 +259,8 @@ export default function PageWrapper({ pageSections = [], pageSlug, children }: P
     }
   };
   
-  // Si no hay secciones definidas o estamos en modo normal (no edición),
-  // simplemente renderizamos los children normalmente
+  // Display Mode: If not in edit mode and no sections are defined for the page,
+  // render provided children or nothing.
   if ((!sections || sections.length === 0) && !isEditMode) {
     return <>{children}</>;
   }

@@ -1,10 +1,32 @@
+/**
+ * @fileoverview This file defines the Hero component, a client-side, full-screen
+ * hero section for the website. It features internationalized text content,
+ * animations powered by framer-motion, and call-to-action buttons.
+ * It also includes an illustrative SVG component.
+ */
 'use client';
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import React, { useState } from 'react';
 
+/**
+ * Props for the Hero component.
+ */
 interface HeroProps {
+  /**
+   * An object containing localized strings for the hero section.
+   * Expected structure:
+   * ```
+   * {
+   *   hero: {
+   *     title: string,    // Main headline
+   *     subtitle: string, // Supporting text below the headline
+   *     cta: string       // Text for the primary call-to-action button (e.g., "Register")
+   *   }
+   * }
+   * ```
+   */
   dictionary: {
     hero: {
       title: string;
@@ -12,9 +34,18 @@ interface HeroProps {
       cta: string;
     };
   };
+  /** The current locale string (e.g., "en", "es"), used for constructing localized links. */
   locale: string;
 }
 
+/**
+ * `InterpretationSVG` is a presentational SVG component used as a visual
+ * illustration within the Hero section. It depicts a headset and chat bubbles,
+ * symbolizing interpretation or communication services.
+ *
+ * @param {React.SVGProps<SVGSVGElement>} props - Standard React SVG props that can be passed to an SVG element.
+ * @returns {React.JSX.Element} The rendered SVG illustration.
+ */
 function InterpretationSVG(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -58,6 +89,28 @@ function InterpretationSVG(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+/**
+ * The `Hero` component renders the main hero section of the website.
+ * It is designed to be full-screen and visually engaging, featuring animated
+ * background elements, internationalized text content, and clear calls to action.
+ *
+ * Visual Elements:
+ * - **Animated Background**: Subtle, continuously moving decorative shapes to add visual interest.
+ * - **Main Content Area**:
+ *   - A hardcoded tagline: "Professional Interpretation".
+ *   - A dynamic title and subtitle, sourced from the `dictionary` prop.
+ *   - Two call-to-action (CTA) buttons:
+ *     - "Register" (text from `dictionary.hero.cta`), linking to `/{locale}/register`.
+ *     - "Explore Services", linking to `/{locale}/services`.
+ * - **Illustration**: The `InterpretationSVG` component is displayed alongside the text content,
+ *   with a subtle scale animation on hover, managed by the `isHovered` state.
+ *
+ * Animations are implemented using `framer-motion` for both the background elements
+ * and the main content's entry animation.
+ *
+ * @param {HeroProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered Hero section.
+ */
 export default function Hero({ dictionary, locale }: HeroProps) {
   const [isHovered, setIsHovered] = useState(false);
 

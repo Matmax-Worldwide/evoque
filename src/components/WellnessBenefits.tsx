@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This file defines the WellnessBenefits component, a presentational
+ * client-side component designed to showcase a list of "At-Home Wellness Programs".
+ * It displays each program with a title, description, icon, duration, level, and a
+ * placeholder image. The component uses `framer-motion` for animations, triggered
+ * by `react-intersection-observer` when elements scroll into view. It concludes
+ * with a call-to-action section.
+ */
 'use client';
 
 import { motion } from 'framer-motion';
@@ -12,10 +20,41 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 
+/**
+ * Props for the WellnessBenefits component.
+ */
 interface WellnessBenefitsProps {
-  dictionary?: any; // Allow any dictionary structure
+  /**
+   * Optional dictionary object for localized strings.
+   * Currently, the main content (program details) is hardcoded in English.
+   * This prop might be used for a main section title or other surrounding text
+   * if the component were to be more deeply internationalized in the future.
+   */
+  dictionary?: any;
 }
 
+/**
+ * The `WellnessBenefits` component is a presentational client-side component
+ * that displays a grid of "At-Home Wellness Programs" and a final call to action.
+ *
+ * Content and Structure:
+ * - A main title section for "At-Home Wellness Programs", which includes a subtitle
+ *   and a "Powered by MatMax" attribution, all animated on view.
+ * - A grid of wellness program cards. The details for these programs (icon, title,
+ *   description, time, level, and an image placeholder) are currently hardcoded
+ *   within the component in the `programs` array.
+ * - Each program card is animated with a staggered effect using `framer-motion`
+ *   when the grid scrolls into view (managed by `useInView`).
+ * - A final call-to-action section encouraging users to "Start Your Wellness Journey Today"
+ *   with a "Get Started" button. This button is currently presentational and does not
+ *   have explicit navigation or action bound to it in this component.
+ *
+ * The `dictionary` prop is available for future internationalization of titles or
+ * other text, though program-specific details are hardcoded.
+ *
+ * @param {WellnessBenefitsProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered WellnessBenefits section.
+ */
 export default function WellnessBenefits({ dictionary = {} }: WellnessBenefitsProps) {
   const [ref, inView] = useInView({
     threshold: 0.1,
