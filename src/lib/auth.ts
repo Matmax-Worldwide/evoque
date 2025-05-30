@@ -1,3 +1,8 @@
+/**
+ * @fileoverview This module provides authentication-related functions,
+ * including password hashing, token generation and verification,
+ * and session management.
+ */
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
@@ -9,14 +14,37 @@ const secret = new TextEncoder().encode(JWT_SECRET);
 // Valid role values based on the Prisma schema
 const VALID_ROLES = ['USER', 'ADMIN', 'MANAGER', 'EMPLOYEE'];
 
+/**
+ * Hashes a password using bcrypt.
+ * @param password - The password to hash.
+ * @returns A promise that resolves to the hashed password.
+ */
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
 
+/**
+ * Compares a password with a hashed password using bcrypt.
+ * @param password - The plain text password.
+ * @param hashedPassword - The hashed password.
+ * @returns A promise that resolves to true if the passwords match, false otherwise.
+ */
 export async function comparePasswords(password: string, hashedPassword: string): Promise<boolean> {
   return bcrypt.compare(password, hashedPassword);
 }
 
+/**
+ * Generates a JWT token.
+ * The roleInfo parameter can be a string (role name) or an object containing role id and/or name.
+ * If roleInfo is a string, it's used as the role name.
+ * If roleInfo is an object, its id and name properties are used.
+ * If roleInfo is null or undefined, a default role of 'USER' is assigned.
+ * The role name must be one of the VALID_ROLES.
+ * @param userId - The ID of the user.
+ * @param roleInfo - Optional role information for the user. Can be a role name string,
+ *                   an object with `id` and/or `name` properties, or null/undefined.
+ * @returns A promise that resolves to the generated JWT token.
+ */
 export async function generateToken(userId: string, roleInfo?: { id?: string, name?: string } | string | null): Promise<string> {
   // Handle different role types properly
   let roleId: string | undefined = undefined;
@@ -51,6 +79,12 @@ export async function generateToken(userId: string, roleInfo?: { id?: string, na
   return token.toString();
 }
 
+/**
+ * Verifies a JWT token.
+ * @param token - The JWT token to verify.
+ * @returns A promise that resolves to the token payload if verification is successful,
+ *          or null if the token is invalid, expired, or verification fails for any other reason.
+ */
 export async function verifyToken(token: string) {
   try {
 
@@ -75,6 +109,12 @@ export async function verifyToken(token: string) {
   }
 }
 
+/**
+ * Retrieves the current session from cookies.
+ * Verifies the session token and returns the payload.
+ * @returns A promise that resolves to the session payload if a valid session token exists,
+ *          or null if no token is found or token verification fails.
+ */
 export async function getSession() {
   const cookieStore = await cookies()
   const token = cookieStore.get('session-token')?.value
@@ -91,6 +131,12 @@ export async function getSession() {
   }
 }
 
+/**
+ * Creates a new session in the database.
+ * This involves generating a session token and storing it along with the user ID and expiration date.
+ * @param userId - The ID of the user for whom to create the session.
+ * @returns A promise that resolves to the created session object from the database.
+ */
 export async function createSession(userId: string) {
   // Get the user to access the role
   const user = await prisma.user.findUnique({ 

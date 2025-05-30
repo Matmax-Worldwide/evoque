@@ -1,6 +1,16 @@
+/**
+ * @fileoverview This module provides a function for deleting a CMS page
+ * and all its associated sections via a GraphQL mutation.
+ */
 import { gqlRequest } from './graphql-client';
 
-// Función para eliminar una página y sus secciones asociadas
+/**
+ * Deletes a CMS page and all of its associated sections using a GraphQL mutation.
+ * @param pageId - The ID of the CMS page to delete.
+ * @returns A promise that resolves to an object containing:
+ *          - `success` (boolean): True if the deletion was successful, false otherwise.
+ *          - `message` (string): A message providing more details about the outcome.
+ */
 export async function deletePageWithSections(pageId: string): Promise<{
   success: boolean;
   message: string;

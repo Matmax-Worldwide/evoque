@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This module serves as the central GraphQL client and API interaction layer.
+ * It provides a core `gqlRequest` function for making GraphQL requests,
+ * defines various TypeScript interfaces for CMS, Form, Blog, and Calendar data,
+ * includes a simple in-memory caching mechanism, and exports numerous functions
+ * grouped by functionality (CMS operations, Form Builder API, Blog API, etc.)
+ * for interacting with the GraphQL backend.
+ */
 import { updateCMSSection } from './cms-update';
 import { deletePageWithSections } from './cms-page-delete';
 import { optimizedQueries } from './graphql-optimizations';
@@ -30,7 +38,31 @@ import {
   CalendarStaffScheduleInput
 } from '@/types/calendar';
 
-// Función simple para realizar solicitudes GraphQL
+/**
+ * Performs a GraphQL request.
+ *
+ * @template T The expected type of the data returned by the GraphQL query.
+ * @param query The GraphQL query string.
+ * @param variables Optional variables for the GraphQL query.
+ * @param timeout Optional timeout for the request in milliseconds (default: 10000ms).
+ * @returns A promise that resolves to the data of type T.
+ * @throws Throws an error if the request fails, times out, or if GraphQL errors are returned (unless it's a public operation).
+ *
+ * Behavior:
+ * - Generates a unique `requestId` for logging and tracking.
+ * - Logs query, variables (in development), and timeout.
+ * - Uses an AbortController for request timeouts.
+ * - Differentiates between public and private operations:
+ *   - Public operations (e.g., `getPageBySlug`, `getMenus`, `submitForm`) do not require authentication.
+ *     If an HTTP or GraphQL auth error occurs in a public operation, it logs a warning and returns an empty object (`{}` as T)
+ *     or partial data if available, instead of throwing an error, to prevent UI breakage.
+ *   - Private operations attempt to include an Authorization header with a session token retrieved from cookies (browser-only).
+ * - Resolves GraphQL endpoint URL: uses `/api/graphql` on the client and an absolute URL (derived from `VERCEL_URL` or localhost) on the server.
+ * - Handles HTTP errors: throws an error for non-OK responses unless it's a public operation.
+ * - Handles GraphQL errors: throws an error if `responseData.errors` is present, with special handling for auth errors in public/form operations.
+ * - Returns `responseData.data` or the entire `responseData` if `data` is not present.
+ * - Handles `AbortError` (timeout) by throwing a specific error message.
+ */
 export async function gqlRequest<T>(
   query: string,
   variables: Record<string, unknown> = {},
@@ -212,14 +244,18 @@ export async function gqlRequest<T>(
   }
 }
 
-// Interfaz para los componentes del CMS
+/**
+ * Represents a generic CMS component with dynamic data.
+ */
 export interface CMSComponent {
   id: string;
   type: string;
   data: Record<string, unknown>;
 }
 
-// Estructura de un componente de la base de datos
+/**
+ * Represents the database structure of a CMS component definition.
+ */
 export interface CMSComponentDB {
   id: string;
   name: string;
@@ -227,13 +263,15 @@ export interface CMSComponentDB {
   description?: string;
   category?: string;
   icon?: string;
-  schema?: Record<string, unknown>;
+  schema?: Record<string, unknown>; // Defines the structure of the component's data
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// Estructura de una página CMS
+/**
+ * Represents the database structure of a CMS page.
+ */
 export interface CMSPageDB {
   id: string;
   title: string;
@@ -249,10 +287,12 @@ export interface CMSPageDB {
   locale?: string; // Add locale property
   createdAt: string;
   updatedAt: string;
-  sections?: Array<{id: string; order?: number}>;
+  sections?: Array<{id: string; order?: number}>; // References to CMSSectionOnPage entities
 }
 
-// Input para crear/actualizar componentes
+/**
+ * Input type for creating or updating CMS components.
+ */
 export interface CMSComponentInput {
   name: string;
   slug: string;
@@ -262,26 +302,35 @@ export interface CMSComponentInput {
   icon?: string;
 }
 
-// Resultado de operaciones con componentes
+/**
+ * Result type for operations involving CMS components (create, update).
+ */
 export interface CMSComponentResult {
   success: boolean;
   message: string;
   component: CMSComponentDB | null;
 }
 
-// Actualizar según la nueva estructura de relaciones
+/**
+ * Represents a component within a CMS section, similar to CMSComponent but potentially with section-specific context.
+ */
 export interface CMSSectionComponent {
   id: string;
   type: string;
   data: Record<string, unknown>;
 }
 
+/**
+ * Result type for operations that return components of a section.
+ */
 export interface CMSSectionResult {
   components: CMSSectionComponent[];
   lastUpdated: string | null;
 }
 
-// Definir la estructura de respuesta esperada para las importaciones dinámicas
+/**
+ * Expected response structure for fetching section components.
+ */
 interface SectionComponentsResponse {
   getSectionComponents?: {
     components: CMSComponent[];
@@ -289,9 +338,11 @@ interface SectionComponentsResponse {
   };
 }
 
-// Interfaces for page data
+/**
+ * Represents the comprehensive data structure for a page, including SEO and section details.
+ */
 export interface PageData {
-  id: string;
+  id:string;
   title: string;
   slug: string;
   description?: string | null;
@@ -335,21 +386,29 @@ export interface SectionData {
   id: string;
   title?: string;
   order: number;
-  components: CMSComponent[];
+  components: CMSComponent[]; // Dynamic components rendered within this section
   backgroundImage?: string;
   backgroundType?: string;
 }
 
-// Generic GraphQL response type
+/**
+ * Generic wrapper for GraphQL responses, accommodating both data and errors.
+ */
 interface GraphQLResponse<T> {
   data?: {
-    [key: string]: T;
+    [key: string]: T; // The actual data payload, typically nested under the operation name
   };
-  errors?: Array<{ message: string }>;
+  errors?: Array<{ message: string }>; // Array of GraphQL errors, if any
 }
 
 
-// Función de utilidad para validar la pertenencia de secciones
+/**
+ * Validates if a section ID logically belongs to a given page ID.
+ * This is a utility function and might not reflect actual database relationships directly.
+ * @param sectionId The ID of the section.
+ * @param pageId The ID of the page.
+ * @returns True if the sectionId starts with `page-${pageId}-`, false otherwise.
+ */
 export const validateSectionOwnership = (sectionId: string, pageId: string): boolean => {
   return sectionId.startsWith(`page-${pageId}-`);
 };
@@ -1110,11 +1169,24 @@ async function updateComponentTitle(sectionId: string, componentId: string, titl
 }
 
 
-// Create a simple in-memory cache for API responses
+/**
+ * Simple in-memory cache for API responses.
+ * @type {Record<string, { data: unknown; timestamp: number }>}
+ */
 const apiCache: Record<string, { data: unknown; timestamp: number }> = {};
+
+/**
+ * Time-to-live for cached items in milliseconds. Default is 1 minute.
+ * @type {number}
+ */
 const CACHE_TTL = 60000; // 1 minute cache TTL by default
 
-// Get a cached response or undefined if expired or not found
+/**
+ * Retrieves a cached response if it exists and has not expired.
+ * @template T The expected type of the cached data.
+ * @param cacheKey The key for the cached item.
+ * @returns The cached data of type T, or undefined if not found or expired.
+ */
 function getCachedResponse<T>(cacheKey: string): T | undefined {
   const cachedItem = apiCache[cacheKey];
   
@@ -1130,7 +1202,13 @@ function getCachedResponse<T>(cacheKey: string): T | undefined {
   return cachedItem.data as T;
 }
 
-// Cache an API response
+/**
+ * Stores an API response in the in-memory cache.
+ * @template T The type of the data to cache.
+ * @param cacheKey The key for the cached item.
+ * @param data The data to cache.
+ * @returns void
+ */
 function setCachedResponse<T>(cacheKey: string, data: T): void {
   apiCache[cacheKey] = {
     data,
@@ -1138,7 +1216,12 @@ function setCachedResponse<T>(cacheKey: string, data: T): void {
   };
 }
 
-// Clear cache for a specific key or pattern
+/**
+ * Clears cache entries. If no `keyPattern` is provided, clears the entire cache.
+ * Otherwise, clears entries where the key includes the `keyPattern`.
+ * @param keyPattern Optional pattern to match against cache keys.
+ * @returns void
+ */
 function clearCache(keyPattern?: string): void {
   if (!keyPattern) {
     // Clear all cache
@@ -1154,7 +1237,9 @@ function clearCache(keyPattern?: string): void {
   });
 }
 
-// Define a type for the section components result
+/**
+ * Type definition for the result of fetching section components.
+ */
 interface SectionComponentsResult {
   components: CMSComponent[];
   lastUpdated: string | null;
@@ -1185,9 +1270,15 @@ export interface FooterStyleInput {
   advancedOptions?: Record<string, unknown>;
 }
 
-// Operaciones CMS
+/**
+ * Groups various CMS-related GraphQL operations.
+ */
 export const cmsOperations = {
-  // Obtener todas las secciones CMS
+  /**
+   * Retrieves all CMS sections.
+   * @returns A promise that resolves to an array of CMS section objects.
+   *          Returns an empty array if an error occurs or no sections are found.
+   */
   getAllCMSSections: async () => {
     try {
       const query = `
@@ -1238,7 +1329,13 @@ export const cmsOperations = {
     }
   },
 
-  // Obtener componentes de una sección
+  /**
+   * Retrieves components for a specific CMS section.
+   * It includes logic to clean the sectionId and uses in-memory caching.
+   * @param sectionId - The ID of the section whose components are to be fetched.
+   * @returns A promise that resolves to an object containing an array of `components` and `lastUpdated` timestamp.
+   *          Returns an empty components array and null lastUpdated if an error occurs or section is not found.
+   */
   getSectionComponents: async (sectionId: string): Promise<SectionComponentsResult> => {
     try {
       // Exit early if sectionId is invalid
@@ -1303,7 +1400,14 @@ export const cmsOperations = {
     }
   },
 
-  // Guardar componentes de una sección
+  /**
+   * Saves the components for a specific CMS section.
+   * Ensures all components have an ID and removes 'title' properties before saving.
+   * Invalidates local and `optimizedQueries` cache for the section upon success.
+   * @param sectionId - The ID of the section.
+   * @param components - An array of CMSComponent objects to save.
+   * @returns A promise that resolves to an object indicating success, a message, and the lastUpdated timestamp.
+   */
   saveSectionComponents: async (
     sectionId: string, 
     components: CMSComponent[]
@@ -1379,7 +1483,12 @@ export const cmsOperations = {
     }
   },
 
-  // Obtener todas las páginas CMS
+  /**
+   * Retrieves all CMS pages.
+   * Filters out sections with null `sectionId` to prevent GraphQL errors.
+   * @returns A promise that resolves to an array of CMSPageDB objects.
+   *          Returns an empty array if an error occurs or no pages are found.
+   */
   getAllPages: async () => {
     try {
       const query = `
@@ -1438,7 +1547,12 @@ export const cmsOperations = {
     }
   },
 
-  // Obtener todos los identificadores de página CMS
+  /**
+   * Retrieves all CMS page identifiers (ID, slug, locale).
+   * Defaults locale to 'en' if missing.
+   * @returns A promise that resolves to an array of page identifier objects.
+   *          Returns an empty array if an error occurs.
+   */
   getAllPageIdentifiers: async () => {
     const GET_ALL_PAGE_IDENTIFIERS_QUERY = `
       query GetAllCMSPageIdentifiers {
@@ -1465,7 +1579,12 @@ export const cmsOperations = {
     }
   },
 
-  // Obtener componentes por tipo
+  /**
+   * Retrieves CMS components by their type.
+   * @param type - The type of components to retrieve.
+   * @returns A promise that resolves to an array of CMSComponentDB objects.
+   *          Returns an empty array if an error occurs or no components of that type are found.
+   */
   getComponentsByType: async (type: string) => {
     try {
       const query = `
@@ -1507,7 +1626,11 @@ export const cmsOperations = {
     }
   },
 
-  // Obtener un componente por ID
+  /**
+   * Retrieves a specific CMS component by its ID.
+   * @param id - The ID of the component to retrieve.
+   * @returns A promise that resolves to a CMSComponentDB object, or null if not found or an error occurs.
+   */
   getComponentById: async (id: string) => {
     try {
       const query = `
@@ -1548,7 +1671,11 @@ export const cmsOperations = {
     }
   },
 
-  // Crear un nuevo componente
+  /**
+   * Creates a new CMS component.
+   * @param input - The data for the new component (CMSComponentInput).
+   * @returns A promise that resolves to a CMSComponentResult object.
+   */
   createComponent: async (input: CMSComponentInput) => {
     try {
       const mutation = `
@@ -1588,7 +1715,12 @@ export const cmsOperations = {
     }
   },
 
-  // Actualizar un componente existente
+  /**
+   * Updates an existing CMS component.
+   * @param id - The ID of the component to update.
+   * @param input - An object containing the fields to update (Partial<CMSComponentInput>).
+   * @returns A promise that resolves to a CMSComponentResult object.
+   */
   updateComponent: async (id: string, input: Partial<CMSComponentInput>) => {
     try {
       const mutation = `
@@ -1628,7 +1760,11 @@ export const cmsOperations = {
     }
   },
 
-  // Eliminar un componente
+  /**
+   * Deletes a CMS component.
+   * @param id - The ID of the component to delete.
+   * @returns A promise that resolves to an object indicating success and a message.
+   */
   deleteComponent: async (id: string) => {
     try {
       const mutation = `
@@ -1656,7 +1792,14 @@ export const cmsOperations = {
     }
   },
 
-  // Create a new CMS page with an automatic section
+  /**
+   * Creates a new CMS page along with a default initial section.
+   * This involves multiple steps: creating the page, creating a default section,
+   * and then associating the section with the page.
+   * Invalidates `allPages` cache on success.
+   * @param pageInput - Data for the new page.
+   * @returns A promise that resolves to an object indicating success, a message, and the created page data (ID, title, slug).
+   */
   createPage: async (pageInput: {
     title: string;
     slug: string;
@@ -1817,7 +1960,13 @@ export const cmsOperations = {
   updatePage,
   getPageById,
 
-  // Eliminar una página CMS
+  /**
+   * Deletes a CMS page and its associated sections.
+   * Fetches page details first for cache invalidation purposes.
+   * Invalidates relevant page, section, and general list caches upon successful deletion.
+   * @param id - The ID of the page to delete.
+   * @returns A promise that resolves to an object indicating success and a message.
+   */
   deletePage: async (id: string): Promise<{
     success: boolean;
     message: string;
@@ -1873,7 +2022,13 @@ export const cmsOperations = {
     return deleteResult;
   },
 
-  // Obtener páginas que usan una sección específica
+  /**
+   * Retrieves pages that use a specific CMS section ID.
+   * Filters out sections with null `sectionId` in the response.
+   * @param sectionId - The ID of the section.
+   * @returns A promise that resolves to an array of PageData objects.
+   *          Returns an empty array if an error occurs or no pages use the section.
+   */
   getPagesUsingSectionId: async (sectionId: string) => {
     try {
       const query = `
@@ -1930,16 +2085,22 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Retrieves a specific CMS section by its internal database ID.
+   * Uses in-memory caching.
+   * @param id - The internal database ID of the CMS section.
+   * @returns A promise that resolves to the CMS section object, or null if not found.
+   */
   async getCMSSection(id: string): Promise<{
     id: string;
-    sectionId: string;
+    sectionId: string; // User-defined/semantic section identifier
     name: string;
     description: string;
     lastUpdated: string;
     createdAt: string;
     updatedAt: string;
     createdBy: string | null;
-    components: unknown;
+    components: unknown; // This likely refers to a list of associated component references or IDs
   } | null> {
     // Check cache first
     const cacheKey = `section_${id}`;
@@ -2003,7 +2164,13 @@ export const cmsOperations = {
     return result;
   },
 
-  // Create CMS Section
+  /**
+   * Creates a new CMS section.
+   * Validates that `sectionId` and `name` are provided.
+   * Invalidates relevant section caches upon success.
+   * @param input - Object containing `sectionId`, `name`, and optional `description`.
+   * @returns A promise that resolves to an object indicating success, a message, and the created section data.
+   */
   createCMSSection: async (input: { 
     sectionId: string; 
     name: string; 
@@ -2091,7 +2258,14 @@ export const cmsOperations = {
   updateComponentTitle,
   updateSectionName,
   
-  // Update section background
+  /**
+   * Updates the background image and type for a CMS section.
+   * Uses `updateCMSSection` internally. Invalidates relevant section caches.
+   * @param sectionId - The ID of the section to update.
+   * @param backgroundImage - The URL of the new background image.
+   * @param backgroundType - The type of background ('image' or 'gradient').
+   * @returns A promise that resolves to an object indicating success, a message, and lastUpdated timestamp.
+   */
   updateSectionBackground: async (sectionId: string, backgroundImage: string, backgroundType: 'image' | 'gradient') => {
     try {
       // Use the updateCMSSection function from cms-update.ts
@@ -2117,7 +2291,12 @@ export const cmsOperations = {
     }
   },
   
-  // Get all menus with their items
+  /**
+   * Retrieves all menus along with their items and associated header/footer styles.
+   * Uses in-memory caching (`all_menus` key).
+   * @returns A promise that resolves to an array of menu objects.
+   *          Returns an empty array if an error occurs or no menus are found.
+   */
   getMenus: async () => {
     // Check cache first
     const cacheKey = 'all_menus';
@@ -2302,7 +2481,13 @@ export const cmsOperations = {
     }
   },
 
-  // Update header style for a menu
+  /**
+   * Updates the header style for a specific menu.
+   * Invalidates `menus` and `all_menus` caches on success.
+   * @param menuId - The ID of the menu whose header style is to be updated.
+   * @param styleInput - An object containing the new header style properties (HeaderStyleInput).
+   * @returns A promise that resolves to an object indicating success, a message, and the updated headerStyle object.
+   */
   updateHeaderStyle: async (menuId: string, styleInput: HeaderStyleInput): Promise<{
     success: boolean;
     message: string;
@@ -2401,7 +2586,11 @@ export const cmsOperations = {
     }
   },
   
-  // Get menu with its header style
+  /**
+   * Retrieves a specific menu along with its header style.
+   * @param menuId - The ID of the menu to retrieve.
+   * @returns A promise that resolves to the menu object with its header style, or null if not found or an error occurs.
+   */
   getMenuWithHeaderStyle: async (menuId: string) => {
     try {
       const query = `
@@ -2477,7 +2666,15 @@ export const cmsOperations = {
   // Añadir referencia a la función getForms
   getForms,
 
-  // Asociar una sección a una página
+  /**
+   * Associates a CMS section with a CMS page at a specific order.
+   * Validates that `pageId` and `sectionId` are provided.
+   * Invalidates relevant page, section, and general list caches on success.
+   * @param pageId - The ID of the page.
+   * @param sectionId - The ID of the section to associate.
+   * @param order - The order of the section within the page.
+   * @returns A promise that resolves to an object indicating success, a message, and the updated page data.
+   */
   associateSectionToPage: async (pageId: string, sectionId: string, order: number): Promise<{
     success: boolean;
     message: string;
@@ -2573,7 +2770,13 @@ export const cmsOperations = {
     }
   },
 
-  // Desasociar una sección de una página
+  /**
+   * Dissociates a CMS section from a CMS page.
+   * Invalidates relevant page, section, and general list caches on success.
+   * @param pageId - The ID of the page.
+   * @param sectionId - The ID of the section to dissociate.
+   * @returns A promise that resolves to an object indicating success, a message, and the updated page data.
+   */
   dissociateSectionFromPage: async (pageId: string, sectionId: string): Promise<{
     success: boolean;
     message: string;
@@ -2634,7 +2837,11 @@ export const cmsOperations = {
     }
   },
 
-  // Obtener todos los componentes CMS
+  /**
+   * Retrieves all CMS component definitions.
+   * @returns A promise that resolves to an array of CMSComponentDB objects.
+   *          Returns an empty array if an error occurs or no components are found.
+   */
   getAllComponents: async () => {
     try {
       const query = `
@@ -2678,7 +2885,13 @@ export const cmsOperations = {
 
   // Header and footer style update methods are defined earlier in the cmsOperations object
 
-  // Update Footer Style
+  /**
+   * Updates the footer style for a specific menu.
+   * Invalidates `menus` and `all_menus` caches on success.
+   * @param menuId - The ID of the menu.
+   * @param styleData - An object containing the new footer style properties (FooterStyleInput).
+   * @returns A promise that resolves to an object indicating success, a message, and the updated footerStyle object.
+   */
   async updateFooterStyle(menuId: string, styleData: FooterStyleInput): Promise<{
     success: boolean;
     message: string;
@@ -2741,7 +2954,11 @@ export const cmsOperations = {
     }
   },
 
-  // Get menu with Footer style
+  /**
+   * Retrieves a specific menu along with its footer style.
+   * @param menuId - The ID of the menu to retrieve.
+   * @returns A promise that resolves to the menu object with its footer style, or null if not found or an error occurs.
+   */
   async getMenuWithFooterStyle(menuId: string): Promise<{
     id: string;
     name: string;
@@ -2869,13 +3086,22 @@ export const cmsOperations = {
     }
   },
 
-  // Expose the clearCache function
+  /**
+   * Exposes the local `clearCache` function for external use if needed, though typically
+   * cache invalidation is handled internally by mutation operations.
+   */
   clearCache,
 
-  // Get the default page for a locale
+  /**
+   * Retrieves the default page for a given locale.
+   * This function is also defined separately and then included here.
+   */
   getDefaultPage,
 
-  // Settings operations
+  /**
+   * Retrieves the global site settings.
+   * @returns A promise that resolves to the site settings object, or null if an error occurs.
+   */
   async getSiteSettings(): Promise<{
     id: string;
     siteName: string;
@@ -2976,6 +3202,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Updates the global site settings.
+   * @param input - An object containing the site settings fields to update.
+   * @returns A promise that resolves to the updated site settings object, or null if an error occurs.
+   * @throws Throws an error if the GraphQL mutation fails.
+   */
   async updateSiteSettings(input: {
     siteName?: string;
     siteDescription?: string;
@@ -3101,7 +3333,10 @@ export const cmsOperations = {
     }
   },
 
-  // User Settings operations
+  /**
+   * Retrieves the settings for the current user.
+   * @returns A promise that resolves to the user settings object, or null if an error occurs.
+   */
   async getUserSettings(): Promise<{
     id: string;
     userId: string;
@@ -3148,6 +3383,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Updates the settings for the current user.
+   * @param input - An object containing the user settings fields to update.
+   * @returns A promise that resolves to the updated user settings object, or null if an error occurs.
+   * @throws Throws an error if the GraphQL mutation fails.
+   */
   async updateUserSettings(input: {
     emailNotifications?: boolean;
     theme?: string;
@@ -3200,7 +3441,11 @@ export const cmsOperations = {
     }
   },
 
-  // Staff Management Operations
+  /**
+   * Retrieves all staff profiles for the calendar/booking system.
+   * @returns A promise that resolves to an array of CalendarStaffProfile objects.
+   *          Returns an empty array if an error occurs.
+   */
   async staffProfiles(): Promise<CalendarStaffProfile[]> {
     try {
       const query = `
@@ -3264,6 +3509,11 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Retrieves all users, typically for administrative or selection purposes within the calendar/booking system.
+   * @returns A promise that resolves to an array of CalendarUser objects.
+   *          Returns an empty array if an error occurs or if the query result is null/undefined.
+   */
   async users(): Promise<CalendarUser[]> {
     try {
       const query = `
@@ -3307,6 +3557,11 @@ export const cmsOperations = {
   },
 
 
+  /**
+   * Retrieves all locations available for bookings.
+   * @returns A promise that resolves to an array of CalendarLocation objects.
+   *          Returns an empty array if an error occurs or if the query result is null/undefined.
+   */
   async locations(): Promise<CalendarLocation[]> {
     try {
       const query = `
@@ -3343,6 +3598,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Creates a new staff profile.
+   * @param input - An object containing the data for the new staff profile, including `userId`, `bio`, and `specializations`.
+   * @returns A promise that resolves to the created CalendarStaffProfile object.
+   * @throws Throws an error if the mutation fails or the server returns an unsuccessful response.
+   */
   async createStaffProfile(input: { input: {
     userId: string;
     bio?: string;
@@ -3398,6 +3659,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Updates an existing staff profile.
+   * @param input - An object containing the `id` of the staff profile to update and an `input` object with the fields to update.
+   * @returns A promise that resolves to the updated CalendarStaffProfile object.
+   * @throws Throws an error if the mutation fails or the server returns an unsuccessful response.
+   */
   async updateStaffProfile(input: { id: string; input: Partial<StaffProfileInput> }): Promise<CalendarStaffProfile> {
     try {
       const mutation = `
@@ -3449,6 +3716,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Deletes a staff profile.
+   * @param input - An object containing the `id` of the staff profile to delete.
+   * @returns A promise that resolves to an object indicating the success and a message from the server.
+   * @throws Throws an error if the mutation fails.
+   */
   async deleteStaffProfile(input: { id: string }): Promise<{ success: boolean; message: string }> {
     try {
       const mutation = `
@@ -3468,6 +3741,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Updates the schedule for a staff profile.
+   * @param input - An object containing `staffProfileId` and an array of `schedule` objects (CalendarStaffScheduleInput).
+   * @returns A promise that resolves to an object indicating the success and a message from the server.
+   * @throws Throws an error if the mutation fails.
+   */
   async updateStaffSchedule(input: { staffProfileId: string; schedule: CalendarStaffScheduleInput[] }): Promise<{ success: boolean; message: string }> {
     try {
       const mutation = `
@@ -3487,6 +3766,11 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Deletes a form submission.
+   * @param id - The ID of the form submission to delete.
+   * @returns A promise that resolves to a FormSubmissionResult object.
+   */
   async deleteFormSubmission(id: string): Promise<FormSubmissionResult> {
     const mutation = `
       mutation DeleteFormSubmission($id: ID!) {
@@ -3501,7 +3785,10 @@ export const cmsOperations = {
     return result.deleteFormSubmission;
   },
 
-  // Calendar booking rules
+  /**
+   * Retrieves the global booking rules for the calendar system.
+   * @returns A promise that resolves to the global booking rule object, or null if not found.
+   */
   async globalBookingRule(): Promise<{
     id: string;
     advanceBookingHoursMin: number;
@@ -3537,7 +3824,11 @@ export const cmsOperations = {
     return result.globalBookingRule;
   },
 
-  // Calendar booking rules - upsert
+  /**
+   * Creates or updates the global booking rules.
+   * @param input - An object containing the booking rule settings.
+   * @returns A promise that resolves to the upserted global booking rule object.
+   */
   async upsertGlobalBookingRules({ input }: {
     input: {
       advanceBookingHoursMin: number;
@@ -3583,7 +3874,11 @@ export const cmsOperations = {
     return result.upsertGlobalBookingRules;
   },
 
-  // Calendar service categories
+  /**
+   * Retrieves all service categories for bookings.
+   * @returns A promise that resolves to an array of service category objects.
+   *          Returns an empty array if an error occurs or if the query result is null/undefined.
+   */
   async serviceCategories(): Promise<Array<{
     id: string;
     name: string;
@@ -3636,7 +3931,11 @@ export const cmsOperations = {
     }
   },
 
-  // Delete service category
+  /**
+   * Deletes a service category.
+   * @param id - The ID of the service category to delete.
+   * @returns A promise that resolves to an object indicating success and a message.
+   */
   async deleteServiceCategory({ id }: { id: string }): Promise<{
     success: boolean;
     message: string;
@@ -3677,7 +3976,12 @@ export const cmsOperations = {
     }
   },
 
-  // Create service category
+  /**
+   * Creates a new service category.
+   * @param input - Data for the new service category.
+   * @returns A promise that resolves to the created service category object.
+   * @throws Throws an error if creation fails.
+   */
   async createServiceCategory({ input }: { 
     input: {
       name?: string;
@@ -3727,7 +4031,13 @@ export const cmsOperations = {
     return result.createServiceCategory.serviceCategory;
   },
 
-  // Update service category
+  /**
+   * Updates an existing service category.
+   * @param id - The ID of the service category to update.
+   * @param input - Data to update the service category with.
+   * @returns A promise that resolves to the updated service category object.
+   * @throws Throws an error if update fails.
+   */
   async updateServiceCategory({ id, input }: { 
     id: string;
     input: {
@@ -3778,7 +4088,12 @@ export const cmsOperations = {
     return result.updateServiceCategory.serviceCategory;
   },
 
-  // Services
+  /**
+   * Retrieves all services available for booking.
+   * Transforms string dates from GraphQL to Date objects.
+   * @returns A promise that resolves to an array of service objects.
+   *          Returns an empty array if an error occurs or if the query result is null/undefined.
+   */
   async services(): Promise<Array<{
     id: string;
     name: string;
@@ -3791,8 +4106,8 @@ export const cmsOperations = {
     cleanupTimeMinutes: number;
     maxDailyBookingsPerService?: number;
     isActive: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: Date; // Note: Transformed to Date object
+    updatedAt: Date; // Note: Transformed to Date object
     serviceCategoryId: string;
     serviceCategory?: { id: string; name: string };
     locations?: Array<{ id: string; name: string }>;
@@ -3839,8 +4154,8 @@ export const cmsOperations = {
         cleanupTimeMinutes: number;
         maxDailyBookingsPerService?: number;
         isActive: boolean;
-        createdAt: string;
-        updatedAt: string;
+        createdAt: string; // Raw string from GraphQL
+        updatedAt: string; // Raw string from GraphQL
         serviceCategoryId: string;
         serviceCategory?: { id: string; name: string };
         locations?: Array<{ id: string; name: string }>;
@@ -3871,6 +4186,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Creates a new service for booking.
+   * @param input - Data for the new service.
+   * @returns A promise that resolves to the created service object (summary fields).
+   * @throws Throws an error if creation fails.
+   */
   async createService({ input }: { input: {
     name: string;
     description?: string | null;
@@ -3931,6 +4252,13 @@ export const cmsOperations = {
     return response.createService.service;
   },
 
+  /**
+   * Updates an existing service.
+   * @param id - The ID of the service to update.
+   * @param input - Data to update the service with.
+   * @returns A promise that resolves to the updated service object (summary fields).
+   * @throws Throws an error if update fails.
+   */
   async updateService({ id, input }: { 
     id: string;
     input: {
@@ -3994,6 +4322,11 @@ export const cmsOperations = {
     return response.updateService.service;
   },
 
+  /**
+   * Deletes a service.
+   * @param id - The ID of the service to delete.
+   * @returns A promise that resolves to an object indicating success and a message.
+   */
   async deleteService({ id }: { id: string }): Promise<{
     success: boolean;
     message: string;
@@ -4022,6 +4355,12 @@ export const cmsOperations = {
     }
   },
 
+  /**
+   * Creates a new location for bookings.
+   * @param input - Data for the new location.
+   * @returns A promise that resolves to the created location object (summary fields).
+   * @throws Throws an error if creation fails.
+   */
   async createLocation({ input }: { input: {
     name: string;
     address?: string | null;
@@ -4068,6 +4407,13 @@ export const cmsOperations = {
     return response.createLocation.location;
   },
 
+  /**
+   * Updates an existing location.
+   * @param id - The ID of the location to update.
+   * @param input - Data to update the location with.
+   * @returns A promise that resolves to the updated location object (summary fields).
+   * @throws Throws an error if update fails.
+   */
   async updateLocation({ id, input }: { 
     id: string;
     input: {
@@ -4117,6 +4463,11 @@ export const cmsOperations = {
     return response.updateLocation.location;
   },
 
+  /**
+   * Deletes a location.
+   * @param id - The ID of the location to delete.
+   * @returns A promise that resolves to an object indicating success and a message.
+   */
   async deleteLocation({ id }: { id: string }): Promise<{
     success: boolean;
     message: string;
@@ -4151,7 +4502,13 @@ export const cmsOperations = {
     };
   },
 
-  // Calendar Bookings Operations
+  /**
+   * Retrieves a list of bookings, with optional filtering and pagination.
+   * @param filter - Optional filter criteria for bookings.
+   * @param pagination - Optional pagination parameters.
+   * @returns A promise that resolves to an object containing booking items, total count, page, and page size,
+   *          or null if an error occurs. Returns an empty result structure if bookings are null/undefined.
+   */
   async bookings({ filter, pagination }: {
     filter?: {
       dateFrom?: string;
@@ -4303,7 +4660,12 @@ export const cmsOperations = {
     }
   },
 
-  // Create a new booking
+  /**
+   * Creates a new booking.
+   * @param input - Data for the new booking.
+   * @returns A promise that resolves to the created booking object, or null if creation fails.
+   * @throws Throws an error if the GraphQL mutation fails.
+   */
   async createBooking({ input }: {
     input: {
       serviceId: string;
@@ -4382,7 +4744,13 @@ export const cmsOperations = {
     }
   },
 
-  // Get staff available for a service at a location
+  /**
+   * Retrieves staff members available for a specific service at a specific location.
+   * @param serviceId - The ID of the service.
+   * @param locationId - The ID of the location.
+   * @returns A promise that resolves to an array of staff profile summaries.
+   *          Returns an empty array if an error occurs or no staff are found.
+   */
   async staffForService({ serviceId, locationId }: {
     serviceId: string;
     locationId: string;
@@ -4435,7 +4803,15 @@ export const cmsOperations = {
     }
   },
 
-  // Get available time slots
+  /**
+   * Retrieves available time slots for a given service, location, staff (optional), and date.
+   * @param serviceId - The ID of the service.
+   * @param locationId - The ID of the location.
+   * @param staffProfileId - Optional ID of the staff member.
+   * @param date - The date for which to find available slots (YYYY-MM-DD format).
+   * @returns A promise that resolves to an array of available time slot objects.
+   *          Returns an empty array if an error occurs or no slots are found.
+   */
   async availableSlots({ 
     serviceId, 
     locationId, 
@@ -4484,7 +4860,11 @@ export const cmsOperations = {
 
 };
 
-// Form Builder API functions
+/**
+ * Retrieves all forms, including a calculated `totalFieldCount` for each.
+ * @returns A promise that resolves to an array of FormBase objects, each augmented with `totalFieldCount`.
+ *          Returns an empty array if an error occurs.
+ */
 async function getForms(): Promise<FormBase[]> {
   const query = `
     query GetForms {
@@ -4545,6 +4925,12 @@ async function getForms(): Promise<FormBase[]> {
   }
 }
 
+/**
+ * Retrieves a specific form by its ID, including all its fields and steps.
+ * Provides a fallback minimal form structure on error to prevent UI breakage.
+ * @param id - The ID of the form to retrieve.
+ * @returns A promise that resolves to the FormBase object or a fallback, or null on critical error.
+ */
 async function getFormById(id: string): Promise<FormBase | null> {
   try {
     const query = `
@@ -4644,6 +5030,11 @@ async function getFormById(id: string): Promise<FormBase | null> {
   }
 }
 
+/**
+ * Retrieves a specific form by its slug, including all its fields and steps.
+ * @param slug - The slug of the form to retrieve.
+ * @returns A promise that resolves to the FormBase object, or null if not found or an error occurs.
+ */
 async function getFormBySlug(slug: string): Promise<FormBase | null> {
   const query = `
     query GetFormBySlug($slug: String!) {
@@ -4724,6 +5115,12 @@ async function getFormBySlug(slug: string): Promise<FormBase | null> {
   }
 }
 
+/**
+ * Retrieves all steps for a given form ID, including fields within each step.
+ * @param formId - The ID of the form whose steps are to be retrieved.
+ * @returns A promise that resolves to an array of FormStepBase objects.
+ *          Returns an empty array if an error occurs or no steps are found.
+ */
 async function getFormSteps(formId: string): Promise<FormStepBase[]> {
   const query = `
     query GetFormSteps($formId: ID!) {
@@ -4769,6 +5166,15 @@ async function getFormSteps(formId: string): Promise<FormStepBase[]> {
   }
 }
 
+/**
+ * Retrieves fields for a given form ID and optionally a step ID.
+ * If `stepId` is provided, it fetches fields for that specific step.
+ * Otherwise, it fetches fields directly under the form (not in any step).
+ * @param formId - The ID of the form.
+ * @param stepId - Optional ID of the step within the form.
+ * @returns A promise that resolves to an array of FormFieldBase objects.
+ *          Returns an empty array if an error occurs or no fields are found.
+ */
 async function getFormFields(formId: string, stepId?: string): Promise<FormFieldBase[]> {
   const query = `
     query GetFormFields($formId: ID!, $stepId: ID) {
@@ -4805,6 +5211,14 @@ async function getFormFields(formId: string, stepId?: string): Promise<FormField
   }
 }
 
+/**
+ * Retrieves submissions for a given form ID, with optional limit and offset for pagination.
+ * @param formId - The ID of the form.
+ * @param limit - Optional limit for the number of submissions to retrieve.
+ * @param offset - Optional offset for pagination.
+ * @returns A promise that resolves to an array of FormSubmissionBase objects.
+ *          Returns an empty array if an error occurs or no submissions are found.
+ */
 async function getFormSubmissions(formId: string, limit?: number, offset?: number): Promise<FormSubmissionBase[]> {
   const query = `
     query GetFormSubmissions($formId: ID!, $limit: Int, $offset: Int) {
@@ -4831,6 +5245,11 @@ async function getFormSubmissions(formId: string, limit?: number, offset?: numbe
   }
 }
 
+/**
+ * Retrieves submission statistics for a given form ID.
+ * @param formId - The ID of the form.
+ * @returns A promise that resolves to a FormSubmissionStats object, or null if an error occurs.
+ */
 async function getFormSubmissionStats(formId: string): Promise<FormSubmissionStats | null> {
   const query = `
     query GetFormSubmissionStats($formId: ID!) {
@@ -4849,6 +5268,12 @@ async function getFormSubmissionStats(formId: string): Promise<FormSubmissionSta
   }
 }
 
+/**
+ * Creates a new form.
+ * Invalidates relevant form caches (`forms`, specific form ID and slug) on success.
+ * @param input - The data for the new form (FormInput).
+ * @returns A promise that resolves to a FormResult object.
+ */
 async function createForm(input: FormInput): Promise<FormResult> {
   const mutation = `
     mutation CreateForm($input: FormInput!) {
@@ -4899,6 +5324,14 @@ async function createForm(input: FormInput): Promise<FormResult> {
   }
 }
 
+/**
+ * Updates an existing form.
+ * Invalidates relevant form caches (specific form ID and slug, general list) on success.
+ * Also invalidates cache for the old slug if the slug was changed.
+ * @param id - The ID of the form to update.
+ * @param input - An object containing the fields to update (Partial<FormInput>).
+ * @returns A promise that resolves to a FormResult object.
+ */
 async function updateForm(id: string, input: Partial<FormInput>): Promise<FormResult> {
   const mutation = `
     mutation UpdateForm($id: ID!, $input: UpdateFormInput!) {
@@ -4954,6 +5387,12 @@ async function updateForm(id: string, input: Partial<FormInput>): Promise<FormRe
   }
 }
 
+/**
+ * Deletes a form.
+ * Invalidates relevant form caches (specific form ID, general list) on success.
+ * @param id - The ID of the form to delete.
+ * @returns A promise that resolves to a FormResult object (typically only success/message for delete).
+ */
 async function deleteForm(id: string): Promise<FormResult> {
   const mutation = `
     mutation DeleteForm($id: ID!) {
@@ -4985,6 +5424,12 @@ async function deleteForm(id: string): Promise<FormResult> {
   }
 }
 
+/**
+ * Creates a new step for a form.
+ * Invalidates caches for the parent form and the general forms list on success.
+ * @param input - The data for the new form step (FormStepInput).
+ * @returns A promise that resolves to a FormStepResult object.
+ */
 async function createFormStep(input: FormStepInput): Promise<FormStepResult> {
   const mutation = `
     mutation CreateFormStep($input: FormStepInput!) {
@@ -5024,6 +5469,12 @@ async function createFormStep(input: FormStepInput): Promise<FormStepResult> {
   }
 }
 
+/**
+ * Creates a new field for a form or a form step.
+ * Invalidates caches for the parent form and the general forms list on success.
+ * @param input - The data for the new form field (FormFieldInput).
+ * @returns A promise that resolves to a FormFieldResult object.
+ */
 async function createFormField(input: FormFieldInput): Promise<FormFieldResult> {
   const mutation = `
     mutation CreateFormField($input: FormFieldInput!) {
@@ -5073,7 +5524,13 @@ async function createFormField(input: FormFieldInput): Promise<FormFieldResult> 
   }
 }
 
-// Update a form field
+/**
+ * Updates an existing form field.
+ * Invalidates caches for the parent form (if formId is available) and the general forms list on success.
+ * @param id - The ID of the form field to update.
+ * @param input - The data to update the form field with (FormFieldInput - though typically Partial for updates).
+ * @returns A promise that resolves to a FormFieldResult object.
+ */
 async function updateFormField(id: string, input: FormFieldInput): Promise<FormFieldResult> {
   const mutation = `
     mutation UpdateFormField($id: ID!, $input: UpdateFormFieldInput!) {
@@ -5130,7 +5587,12 @@ async function updateFormField(id: string, input: FormFieldInput): Promise<FormF
   }
 }
 
-// Delete a form field
+/**
+ * Deletes a form field.
+ * Invalidates the general forms list cache as a broad measure, since formId is not directly available.
+ * @param id - The ID of the form field to delete.
+ * @returns A promise that resolves to an object indicating success and a message.
+ */
 async function deleteFormField(id: string): Promise<{success: boolean; message: string}> {
   const mutation = `
     mutation DeleteFormField($id: ID!) {
@@ -5158,6 +5620,12 @@ async function deleteFormField(id: string): Promise<{success: boolean; message: 
   }
 }
 
+/**
+ * Submits a form.
+ * @param input - The form submission data (FormSubmissionInput).
+ * @returns A promise that resolves to a FormSubmissionResult object.
+ * @throws Throws an error if the submission fails.
+ */
 async function submitForm(input: FormSubmissionInput): Promise<FormSubmissionResult> {
   const query = `
     mutation SubmitForm($input: FormSubmissionInput!) {
@@ -5186,6 +5654,13 @@ async function submitForm(input: FormSubmissionInput): Promise<FormSubmissionRes
   }
 }
 
+/**
+ * Updates the status of a form submission.
+ * @param id - The ID of the form submission to update.
+ * @param status - The new status string.
+ * @returns A promise that resolves to a FormSubmissionResult object.
+ * @throws Throws an error if the update fails.
+ */
 async function updateFormSubmissionStatus(id: string, status: string): Promise<FormSubmissionResult> {
   const query = `
     mutation UpdateFormSubmissionStatus($id: ID!, $status: SubmissionStatus!) {
@@ -5214,7 +5689,12 @@ async function updateFormSubmissionStatus(id: string, status: string): Promise<F
   }
 }
 
-// Update field order
+/**
+ * Updates the order of a single form field.
+ * @param id - The ID of the form field to update.
+ * @param newOrder - The new order value for the field.
+ * @returns A promise that resolves to a FormFieldResult object.
+ */
 async function updateFieldOrder(id: string, newOrder: number): Promise<FormFieldResult> {
   const mutation = `
     mutation UpdateFieldOrder($id: ID!, $order: Int!) {
@@ -5248,7 +5728,12 @@ async function updateFieldOrder(id: string, newOrder: number): Promise<FormField
   }
 }
 
-// Update multiple field orders at once
+/**
+ * Updates the order of multiple form fields at once.
+ * Invalidates the general forms list cache on success.
+ * @param updates - An array of objects, each containing `id` (field ID) and `order` (new order value).
+ * @returns A promise that resolves to an object indicating success and a message.
+ */
 async function updateFieldOrders(updates: Array<{ id: string; order: number }>): Promise<{
   success: boolean;
   message: string;
@@ -5292,7 +5777,10 @@ async function updateFieldOrders(updates: Array<{ id: string; order: number }>):
   }
 }
 
-// Create a variable for the exported object
+/**
+ * Main exported object containing all GraphQL client functions,
+ * grouped by functionality (CMS, Forms, Blog, Calendar, etc.).
+ */
 const graphqlClient = {
   // CMS Operations
   ...cmsOperations,
@@ -5321,7 +5809,17 @@ const graphqlClient = {
   updateFormSubmissionStatus,
   deleteFormSubmission,
 
+  /**
+   * @namespace BlogAPI
+   * @description Functions for interacting with the Blog and Post entities.
+   */
   // Blog operations
+  /**
+   * Retrieves all blogs.
+   * @memberof BlogAPI
+   * @returns A promise that resolves to an array of Blog objects.
+   *          Returns an empty array if an error occurs.
+   */
   async getBlogs() {
     const query = `
       query GetBlogs {
@@ -5346,6 +5844,12 @@ const graphqlClient = {
     }
   },
 
+  /**
+   * Retrieves a specific blog by its ID.
+   * @memberof BlogAPI
+   * @param id - The ID of the blog to retrieve.
+   * @returns A promise that resolves to the Blog object, or null if not found or an error occurs.
+   */
   async getBlogById(id: string) {
     const query = `
       query GetBlogById($id: ID!) {
@@ -5370,6 +5874,12 @@ const graphqlClient = {
     }
   },
 
+  /**
+   * Retrieves a specific blog by its slug.
+   * @memberof BlogAPI
+   * @param slug - The slug of the blog to retrieve.
+   * @returns A promise that resolves to the Blog object, or null if not found or an error occurs.
+   */
   async getBlogBySlug(slug: string) {
     const query = `
       query GetBlogBySlug($slug: String!) {
@@ -5394,6 +5904,13 @@ const graphqlClient = {
     }
   },
 
+  /**
+   * Creates a new blog.
+   * Invalidates relevant blog caches on success.
+   * @memberof BlogAPI
+   * @param input - Data for the new blog.
+   * @returns A promise that resolves to an object indicating success, a message, and the created blog data.
+   */
   async createBlog(input: {
     title: string;
     description?: string | null;
@@ -5448,6 +5965,13 @@ const graphqlClient = {
     }
   },
 
+  /**
+   * Deletes a blog.
+   * Invalidates relevant blog caches on success.
+   * @memberof BlogAPI
+   * @param id - The ID of the blog to delete.
+   * @returns A promise that resolves to an object indicating success and a message.
+   */
   async deleteBlog(id: string) {
     const query = `
       mutation DeleteBlog($id: ID!) {
@@ -5469,6 +5993,14 @@ const graphqlClient = {
     return response.deleteBlog;
   },
 
+  /**
+   * Updates an existing blog.
+   * Invalidates relevant blog caches on success.
+   * @memberof BlogAPI
+   * @param id - The ID of the blog to update.
+   * @param input - Data to update the blog with.
+   * @returns A promise that resolves to an object indicating success, a message, and the updated blog data.
+   */
   async updateBlog(id: string, input: {
     title?: string;
     description?: string | null;
@@ -5529,7 +6061,18 @@ const graphqlClient = {
     }
   },
 
+  /**
+   * @namespace PostAPI
+   * @description Functions for interacting with Post entities. These are typically part of the BlogAPI.
+   */
   // Post operations
+  /**
+   * Creates a new post.
+   * Invalidates relevant post and blog caches on success.
+   * @memberof PostAPI
+   * @param input - Data for the new post, including `featuredImageId`.
+   * @returns A promise that resolves to an object indicating success, a message, and the created post data.
+   */
   async createPost(input: {
     title: string;
     slug: string;
@@ -5594,6 +6137,13 @@ const graphqlClient = {
     return response.createPost;
   },
 
+  /**
+   * Retrieves posts, with optional filtering.
+   * @memberof PostAPI
+   * @param filter - Optional filter criteria for posts.
+   * @returns A promise that resolves to an array of Post objects.
+   *          Returns an empty array if an error occurs or no posts are found.
+   */
   async getPosts(filter?: {
     blogId?: string;
     status?: string;
@@ -5647,6 +6197,12 @@ const graphqlClient = {
   },
   
 
+  /**
+   * Retrieves a specific post by its slug.
+   * @memberof PostAPI
+   * @param slug - The slug of the post to retrieve.
+   * @returns A promise that resolves to the Post object, or null if not found or an error occurs.
+   */
   async getPostBySlug(slug: string) {
     const query = `
       query GetPostBySlug($slug: String!) {
@@ -5690,6 +6246,14 @@ const graphqlClient = {
     return response.postBySlug;
   },
 
+  /**
+   * Updates an existing post.
+   * Invalidates relevant post and general posts caches on success.
+   * @memberof PostAPI
+   * @param id - The ID of the post to update.
+   * @param input - Data to update the post with, including optional `featuredImageId`.
+   * @returns A promise that resolves to an object indicating success, a message, and the updated post data (summary).
+   */
   async updatePost(id: string, input: {
     title?: string;
     slug?: string;
@@ -5745,6 +6309,13 @@ const graphqlClient = {
     return response.updatePost;
   },
 
+  /**
+   * Deletes a post.
+   * Invalidates relevant post and general posts caches on success.
+   * @memberof PostAPI
+   * @param id - The ID of the post to delete.
+   * @returns A promise that resolves to an object indicating success and a message.
+   */
   async deletePost(id: string) {
     const mutation = `
       mutation DeletePost($id: ID!) {
@@ -5767,9 +6338,281 @@ const graphqlClient = {
     return response.deletePost;
   },
 
-  // Settings operations
-  async getSiteSettings(): Promise<{
-    id: string;
+  // Settings operations are duplicated; they are already part of cmsOperations
+  // Removing duplicate definitions here.
+  // async getSiteSettings(): Promise<{ ... }> { ... },
+  // async updateSiteSettings(input: { ... }): Promise<{ ... } | null> { ... },
+  // async getUserSettings(): Promise<{ ... } | null> { ... },
+  // async updateUserSettings(input: { ... }): Promise<{ ... } | null> { ... },
+
+  // Staff Management Operations are duplicated; they are already part of cmsOperations
+  // Removing duplicate definitions here.
+  // async staffProfiles(): Promise<CalendarStaffProfile[]> { ... },
+  // async users(): Promise<CalendarUser[]> { ... },
+  // async locations(): Promise<CalendarLocation[]> { ... },
+  // async createStaffProfile(input: { ... }): Promise<CalendarStaffProfile> { ... },
+  // async updateStaffProfile(input: { ... }): Promise<CalendarStaffProfile> { ... },
+  // async deleteStaffProfile(input: { ... }): Promise<{ success: boolean; message: string }> { ... },
+  // async updateStaffSchedule(input: { ... }): Promise<{ success: boolean; message: string }> { ... },
+
+  // Calendar Bookings Operations are duplicated; they are already part of cmsOperations
+  // Removing duplicate definitions here.
+  // async bookings({ filter, pagination }: { ... }): Promise<{ ... } | null> { ... },
+
+};
+
+// Export all functions
+export default graphqlClient;
+
+/**
+ * Retrieves the default page for a given locale.
+ * Uses in-memory caching (`default_page_{locale}` key).
+ * @param locale - The locale string (e.g., "en"). Defaults to "en".
+ * @returns A promise that resolves to the PageData object for the default page, or null if not found or an error occurs.
+ */
+async function getDefaultPage(locale: string = 'en'): Promise<PageData | null> {
+  try {
+    console.log(`[getDefaultPage] Attempting to fetch default page for locale: "${locale}"`);
+
+    // Check cache first
+    const cacheKey = `default_page_${locale}`;
+    const cachedPage = getCachedResponse<PageData>(cacheKey);
+
+    if (cachedPage) {
+      console.log(`[getDefaultPage] Found cached default page: ${cachedPage.title}`);
+      return cachedPage;
+    }
+
+    const query = `
+      query GetDefaultPage($locale: String!) {
+        getDefaultPage(locale: $locale) {
+          id
+          title
+          slug
+          description
+          template
+          isPublished
+          publishDate
+          featuredImage
+          metaTitle
+          metaDescription
+          parentId
+          order
+          pageType
+          locale
+          scrollType
+          isDefault
+          createdAt
+          updatedAt
+          sections {
+            id
+            sectionId
+            name
+            order
+          }
+          seo {
+            title
+            description
+            keywords
+            ogTitle
+            ogDescription
+            ogImage
+            twitterTitle
+            twitterDescription
+            twitterImage
+            canonicalUrl
+            structuredData
+          }
+        }
+      }
+    `;
+
+    const variables = { locale };
+
+    console.log(`[getDefaultPage] Executing GraphQL query with variables:`, variables);
+    const result = await gqlRequest<{
+      getDefaultPage?: PageData;
+      data?: { getDefaultPage: PageData };
+      errors?: Array<{ message: string }>
+    }>(query, variables);
+
+    console.log(`[getDefaultPage] GraphQL result:`, result);
+
+    // Check for errors in the response
+    if (result.errors && result.errors.length > 0) {
+      console.error(`[getDefaultPage] GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`);
+      return null;
+    }
+
+    // Try to extract page data from different possible response structures
+    let page: PageData | null = null;
+
+    if (result.getDefaultPage) {
+      page = result.getDefaultPage;
+    } else if (result.data?.getDefaultPage) {
+      page = result.data.getDefaultPage;
+    } else {
+      console.log(`[getDefaultPage] No default page found for locale "${locale}"`);
+      return null;
+    }
+
+    if (page) {
+      // Cache the result for future requests
+      setCachedResponse(cacheKey, page);
+      console.log(`[getDefaultPage] Found and cached default page: ${page.title}`);
+    }
+
+    return page;
+  } catch (error) {
+    console.error('[getDefaultPage] Error fetching default page:', error);
+    return null;
+  }
+}
+
+/**
+ * Updates an existing form step.
+ * Invalidates caches for the parent form and the general forms list on success.
+ * @param id - The ID of the form step to update.
+ * @param input - An object containing the fields to update (Partial<FormStepInput>).
+ * @returns A promise that resolves to a FormStepResult object.
+ */
+async function updateFormStep(id: string, input: Partial<FormStepInput>): Promise<FormStepResult> {
+  const mutation = `
+    mutation UpdateFormStep($id: ID!, $input: FormStepInput!) {
+      updateFormStep(id: $id, input: $input) {
+        success
+        message
+        step {
+          id
+          formId
+          title
+          description
+          order
+          isVisible
+          validationRules
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  `;
+
+  const variables = { id, input };
+
+  try {
+    const response = await gqlRequest<{ updateFormStep: FormStepResult }>(mutation, variables);
+    if (response.updateFormStep && response.updateFormStep.success && response.updateFormStep.step) {
+      const formId = response.updateFormStep.step.formId;
+      optimizedQueries.invalidateCache(`form:${formId}`);
+      clearCache(`form_${formId}`);
+      optimizedQueries.invalidateCache('forms');
+      clearCache('forms');
+    }
+    return response.updateFormStep || { success: false, message: 'Failed to update form step', step: null };
+  } catch (error) {
+    console.error('Error updating form step:', error);
+    return { success: false, message: 'Error updating form step', step: null };
+  }
+}
+
+/**
+ * Deletes a form step.
+ * Invalidates the general forms list cache as a broad measure.
+ * @param id - The ID of the form step to delete.
+ * @returns A promise that resolves to a FormStepResult object (typically only success/message for delete).
+ */
+async function deleteFormStep(id: string): Promise<FormStepResult> {
+  const mutation = `
+    mutation DeleteFormStep($id: ID!) {
+      deleteFormStep(id: $id) {
+        success
+        message
+      }
+    }
+  `;
+
+  const variables = { id };
+
+  try {
+    const response = await gqlRequest<{ deleteFormStep: FormStepResult }>(mutation, variables);
+    // For delete, the step object might not be returned, or formId might not be in it.
+    // If formId is part of the input or can be reliably inferred, use it.
+    // Assuming 'id' passed to deleteFormStep is the step's ID, and we don't have formId directly.
+    // This makes targeted invalidation hard without fetching step details first or changing API.
+    // As a broader measure, we invalidate all forms list cache.
+    if (response.deleteFormStep && response.deleteFormStep.success) {
+      // Best effort: if step info with formId was returned, use it.
+      // if (response.deleteFormStep.step && response.deleteFormStep.step.formId) {
+      //   const formId = response.deleteFormStep.step.formId;
+      //   optimizedQueries.invalidateCache(`form:${formId}`);
+      //   clearCache(`form_${formId}`);
+      // }
+      optimizedQueries.invalidateCache('forms'); // Invalidate general list
+      clearCache('forms');
+    }
+    return response.deleteFormStep || { success: false, message: 'Failed to delete form step', step: null };
+  } catch (error) {
+    console.error('Error deleting form step:', error);
+    return { success: false, message: 'Error deleting form step', step: null };
+  }
+}
+
+/**
+ * Updates the order of multiple form steps at once.
+ * @param updates - An array of objects, each containing `id` (step ID) and `order` (new order value).
+ * @returns A promise that resolves to an object indicating success and a message.
+ */
+async function updateStepOrders(updates: Array<{ id: string; order: number }>): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const mutation = `
+    mutation UpdateStepOrders($updates: [StepOrderUpdate!]!) {
+      updateStepOrders(updates: $updates) {
+        success
+        message
+      }
+    }
+  `;
+
+  const variables = { updates };
+
+  try {
+    const response = await gqlRequest<{ updateStepOrders: { success: boolean; message: string } }>(mutation, variables);
+    return response.updateStepOrders || { success: false, message: 'Failed to update step orders' };
+  } catch (error) {
+    console.error('Error updating step orders:', error);
+    return { success: false, message: 'Error updating step orders' };
+  }
+}
+
+/**
+ * Deletes a form submission.
+ * This function is also part of `cmsOperations` but defined here for direct export or use by `graphqlClient`.
+ * @param id - The ID of the form submission to delete.
+ * @returns A promise that resolves to a FormSubmissionResult object.
+ */
+async function deleteFormSubmission(id: string): Promise<FormSubmissionResult> {
+  const mutation = `
+    mutation DeleteFormSubmission($id: ID!) {
+      deleteFormSubmission(id: $id) {
+        success
+        message
+        submission
+      }
+    }
+  `;
+
+  const variables = { id };
+
+  try {
+    const response = await gqlRequest<{ deleteFormSubmission: FormSubmissionResult }>(mutation, variables);
+    return response.deleteFormSubmission || { success: false, message: 'Failed to delete form submission', submission: null };
+  } catch (error) {
+    console.error('Error deleting form submission:', error);
+    return { success: false, message: 'Error deleting form submission', submission: null };
+  }
+}
     siteName: string;
     siteDescription?: string;
     logoUrl?: string;

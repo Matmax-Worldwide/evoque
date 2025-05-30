@@ -1,31 +1,58 @@
-// GraphQL Query Optimizations
-// Implements batching, selective loading, and intelligent caching
+/**
+ * @fileoverview This module provides the `GraphQLOptimizer` class and related utilities
+ * for optimizing GraphQL requests. It implements features like query batching,
+ * intelligent caching with TTL and dependency-based invalidation, and selective
+ * loading of data (e.g., loading basic page data first, then components, and
+ * preloading video-specific data). The goal is to improve performance by reducing
+ * the number of network requests, minimizing data transfer, and leveraging cached data.
+ */
 
+/**
+ * Represents a query item in the batch queue.
+ */
 interface QueryBatch {
-  id: string;
-  query: string;
-  variables: Record<string, unknown>;
-  resolve: (data: unknown) => void;
-  reject: (error: Error) => void;
-  timestamp: number;
+  id: string; // Unique identifier for the query, typically the cache key.
+  query: string; // The GraphQL query string.
+  variables: Record<string, unknown>; // Variables for the query.
+  resolve: (data: unknown) => void; // Promise resolve function.
+  reject: (error: Error) => void; // Promise reject function.
+  timestamp: number; // Timestamp of when the query was added to the batch.
 }
 
+/**
+ * Represents an entry in the cache.
+ * @template T The type of the cached data.
+ */
 interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-  dependencies?: string[];
+  data: T; // The cached data.
+  timestamp: number; // Timestamp of when the entry was cached.
+  ttl: number; // Time-to-live for this cache entry in milliseconds.
+  dependencies?: string[]; // Optional array of dependency keys for invalidation.
 }
 
+/**
+ * Class responsible for optimizing GraphQL queries through batching, caching,
+ * and selective loading strategies.
+ */
 class GraphQLOptimizer {
+  /** @private Queue for batching GraphQL queries. */
   private batchQueue: QueryBatch[] = [];
+  /** @private Timeout ID for executing the batch. */
   private batchTimeout: NodeJS.Timeout | null = null;
+  /** @private In-memory cache for storing query results. */
   private cache = new Map<string, CacheEntry<unknown>>();
+  /** @private Delay in milliseconds before executing a batch of queries. */
   private readonly BATCH_DELAY = 10; // ms
+  /** @private Default time-to-live for cache entries in milliseconds (5 minutes). */
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
+  /** @private Maximum number of entries allowed in the cache. */
   private readonly MAX_CACHE_SIZE = 1000;
 
-  // Optimized queries with minimal field selection
+  /**
+   * @private
+   * A collection of optimized GraphQL query strings with minimal field selection
+   * for common operations.
+   */
   private readonly OPTIMIZED_QUERIES = {
     // Minimal page data for initial load
     getPageBasic: `
@@ -112,17 +139,34 @@ class GraphQLOptimizer {
     `
   };
 
-  // Generate cache key from query and variables
+  /**
+   * Generates a cache key based on the query string and variables.
+   * Normalizes whitespace in the query and stringifies variables.
+   * @private
+   * @param query - The GraphQL query string.
+   * @param variables - An object containing query variables.
+   * @returns A unique string key for caching.
+   */
   private getCacheKey(query: string, variables: Record<string, unknown>): string {
     return `${query.replace(/\s+/g, ' ').trim()}_${JSON.stringify(variables)}`;
   }
 
-  // Check if cache entry is valid
+  /**
+   * Checks if a cache entry is still valid based on its timestamp and TTL.
+   * @private
+   * @template T The type of the cached data.
+   * @param entry - The cache entry to validate.
+   * @returns True if the entry is valid, false otherwise.
+   */
   private isCacheValid<T>(entry: CacheEntry<T>): boolean {
     return Date.now() - entry.timestamp < entry.ttl;
   }
 
-  // Clean expired cache entries
+  /**
+   * Cleans the cache by removing expired entries and, if still over MAX_CACHE_SIZE,
+   * removes the oldest entries until the cache size is within limits.
+   * @private
+   */
   private cleanCache(): void {
     const now = Date.now();
     for (const [key, entry] of this.cache.entries()) {
@@ -141,7 +185,16 @@ class GraphQLOptimizer {
     }
   }
 
-  // Set cache entry with dependencies
+  /**
+   * Sets a new entry in the cache.
+   * Periodically triggers `cleanCache` if cache size reaches a multiple of 100.
+   * @private
+   * @template T The type of the data to cache.
+   * @param key - The cache key.
+   * @param data - The data to cache.
+   * @param ttl - Optional time-to-live in milliseconds (defaults to DEFAULT_TTL).
+   * @param dependencies - Optional array of dependency strings for invalidation.
+   */
   private setCache<T>(
     key: string, 
     data: T, 
@@ -161,7 +214,14 @@ class GraphQLOptimizer {
     }
   }
 
-  // Get cached data
+  /**
+   * Retrieves an entry from the cache if it exists and is valid.
+   * If the entry is found but expired, it's deleted from the cache.
+   * @private
+   * @template T The expected type of the cached data.
+   * @param key - The cache key.
+   * @returns The cached data of type T, or null if not found or expired.
+   */
   private getCache<T>(key: string): T | null {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
     if (entry && this.isCacheValid(entry)) {
@@ -169,13 +229,17 @@ class GraphQLOptimizer {
     }
     
     if (entry) {
-      this.cache.delete(key);
+      this.cache.delete(key); // Delete expired entry
     }
     
     return null;
   }
 
-  // Invalidate cache by dependencies
+  /**
+   * Invalidates cache entries based on a dependency string.
+   * Any cache entry that includes the given dependency in its `dependencies` array will be removed.
+   * @param dependency - The dependency string to invalidate by.
+   */
   invalidateByDependency(dependency: string): void {
     for (const [key, entry] of this.cache.entries()) {
       if (entry.dependencies?.includes(dependency)) {
@@ -184,7 +248,20 @@ class GraphQLOptimizer {
     }
   }
 
-  // Execute GraphQL request with caching
+  /**
+   * Main method for executing GraphQL queries.
+   * Handles caching (if enabled) and can optionally batch queries.
+   * @template T The expected type of the data returned by the GraphQL query.
+   * @param query - The GraphQL query string.
+   * @param variables - Optional variables for the GraphQL query.
+   * @param options - Optional configuration for caching and batching.
+   * @param options.cache - Whether to use caching (default: true).
+   * @param options.ttl - TTL for the cache entry in ms (default: DEFAULT_TTL).
+   * @param options.dependencies - Array of dependency strings for cache invalidation.
+   * @param options.batch - Whether to batch this query (default: false).
+   * @returns A promise that resolves to the query result of type T.
+   * @throws Throws an error if the underlying GraphQL request fails.
+   */
   async executeQuery<T>(
     query: string,
     variables: Record<string, unknown> = {},
@@ -233,7 +310,17 @@ class GraphQLOptimizer {
     }
   }
 
-  // Batch multiple queries together
+  /**
+   * Adds a query to the batch queue. If no batch timeout is active, it starts one.
+   * @private
+   * @template T The expected type of the data returned by the GraphQL query.
+   * @param query - The GraphQL query string.
+   * @param variables - Variables for the query.
+   * @param cacheKey - The generated cache key for this query.
+   * @param ttl - TTL for caching the result.
+   * @param dependencies - Optional dependencies for cache invalidation.
+   * @returns A promise that resolves with the query result of type T when the batch is executed.
+   */
   private async batchQuery<T>(
     query: string,
     variables: Record<string, unknown>,
@@ -255,13 +342,20 @@ class GraphQLOptimizer {
       // Set timeout to execute batch
       if (!this.batchTimeout) {
         this.batchTimeout = setTimeout(() => {
-          this.executeBatch(ttl, dependencies);
+          this.executeBatch(ttl, dependencies); // Pass ttl and dependencies for caching batched results
         }, this.BATCH_DELAY);
       }
     });
   }
 
-  // Execute batched queries
+  /**
+   * Executes all queries currently in the batch queue.
+   * It processes the queue, makes parallel GraphQL requests,
+   * resolves individual promises, and caches the results.
+   * @private
+   * @param ttl - Optional TTL to use for caching the results of this batch.
+   * @param dependencies - Optional dependencies to associate with cached results from this batch.
+   */
   private async executeBatch(ttl?: number, dependencies?: string[]): Promise<void> {
     if (this.batchQueue.length === 0) return;
 
@@ -276,40 +370,56 @@ class GraphQLOptimizer {
       const results = await Promise.allSettled(
         batch.map(item => 
           gqlRequest(item.query, item.variables).then(result => ({
-            id: item.id,
+            id: item.id, // This is the cacheKey
             result,
-            item
+            item // The original QueryBatch item
           }))
         )
       );
 
       // Resolve individual promises
-      results.forEach((result, index) => {
-        const batchItem = batch[index];
-        
-        if (result.status === 'fulfilled') {
-          const { result: data } = result.value;
+      results.forEach((resultOutcome) => { // Renamed `result` to `resultOutcome` to avoid conflict
+        if (resultOutcome.status === 'fulfilled') {
+          const { id: cacheKey, result: data, item: batchItem } = resultOutcome.value;
           batchItem.resolve(data);
           
           // Cache the result with provided ttl and dependencies
-          this.setCache(batchItem.id, data, ttl, dependencies);
+          // Ensure ttl and dependencies from the batchQuery call are used if executeBatch specific ones aren't provided
+          this.setCache(cacheKey, data, ttl || this.DEFAULT_TTL, dependencies || batchItem.item?.dependencies); // Access dependencies from original item if needed
         } else {
-          batchItem.reject(new Error(result.reason));
+          // Find the original batch item that corresponds to this failed promise.
+          // This assumes the order is maintained or we can find by some unique identifier if not cacheKey.
+          // For simplicity, this example assumes order is maintained or cacheKey (item.id) is sufficient.
+          const failedItem = batch.find(b => b.id === (resultOutcome.reason as any)?.request?.id || b.id === (resultOutcome.reason as any)?.id);
+          if (failedItem) {
+            failedItem.reject(new Error((resultOutcome.reason as Error)?.message || 'Unknown batch execution error'));
+          } else {
+            // Fallback if item cannot be identified, though this should ideally not happen
+            console.error("Failed to identify item for rejection in batch:", resultOutcome.reason);
+          }
         }
       });
 
     } catch (error) {
-      // Reject all pending queries
+      // Reject all pending queries in this specific batch execution
       batch.forEach(item => {
         item.reject(error instanceof Error ? error : new Error('Batch execution failed'));
       });
     }
   }
 
-  // Optimized page loading with video detection
+  /**
+   * Loads page data in an optimized manner:
+   * 1. Fetches basic page data (ID, title, slug, sections list) using an optimized query.
+   * 2. Fetches components for all sections of the page in parallel (batched).
+   * 3. Identifies sections containing video components.
+   * @param slug - The slug of the page to load.
+   * @returns A promise that resolves to an object containing the page data,
+   *          an array of section data (with components), and an array of video section IDs.
+   */
   async loadPageOptimized(slug: string): Promise<{
-    page: unknown;
-    sections: unknown[];
+    page: unknown; // Type should be more specific, e.g., PageData
+    sections: unknown[]; // Type should be more specific, e.g., SectionData[]
     videoSections: string[];
   }> {
     // First, load basic page data
@@ -367,7 +477,12 @@ class GraphQLOptimizer {
     };
   }
 
-  // Preload video sections for faster playback
+  /**
+   * Preloads video components from specified section IDs.
+   * It fetches components for these sections and then uses `videoPreloader`
+   * to preload any video URLs found in components of type 'video' or 'videosection'.
+   * @param videoSectionIds - An array of section IDs known to contain video components.
+   */
   async preloadVideoSections(videoSectionIds: string[]): Promise<void> {
     if (!videoSectionIds.length) return;
 
@@ -415,7 +530,10 @@ class GraphQLOptimizer {
     }
   }
 
-  // Load menus with caching
+  /**
+   * Loads menu data using an optimized query and caches the result.
+   * @returns A promise that resolves to the menu data.
+   */
   async loadMenus(): Promise<unknown> {
     return this.executeQuery(
       this.OPTIMIZED_QUERIES.getMenusMinimal,
@@ -428,12 +546,17 @@ class GraphQLOptimizer {
     );
   }
 
-  // Clear all cache
+  /**
+   * Clears the entire GraphQL query cache.
+   */
   clearCache(): void {
     this.cache.clear();
   }
 
-  // Get cache statistics
+  /**
+   * Retrieves statistics about the cache.
+   * @returns An object containing total entries, valid entries, expired entries, and hit rate.
+   */
   getCacheStats() {
     let validEntries = 0;
     let expiredEntries = 0;
@@ -455,15 +578,26 @@ class GraphQLOptimizer {
   }
 }
 
-// Global optimizer instance
+/**
+ * Global instance of the GraphQLOptimizer.
+ * Use this instance to interact with optimized query functionalities.
+ */
 export const graphqlOptimizer = new GraphQLOptimizer();
 
-// Convenience functions
+/**
+ * Provides convenient access to the global `graphqlOptimizer`'s methods.
+ */
 export const optimizedQueries = {
+  /** Loads page data in an optimized manner. @see GraphQLOptimizer#loadPageOptimized */
   loadPage: (slug: string) => graphqlOptimizer.loadPageOptimized(slug),
+  /** Preloads video components from specified section IDs. @see GraphQLOptimizer#preloadVideoSections */
   preloadVideos: (sectionIds: string[]) => graphqlOptimizer.preloadVideoSections(sectionIds),
+  /** Loads menu data with caching. @see GraphQLOptimizer#loadMenus */
   loadMenus: () => graphqlOptimizer.loadMenus(),
+  /** Invalidates cache entries by a dependency string. @see GraphQLOptimizer#invalidateByDependency */
   invalidateCache: (dependency: string) => graphqlOptimizer.invalidateByDependency(dependency),
+  /** Clears the entire GraphQL query cache. @see GraphQLOptimizer#clearCache */
   clearCache: () => graphqlOptimizer.clearCache(),
+  /** Retrieves statistics about the cache. @see GraphQLOptimizer#getCacheStats */
   getStats: () => graphqlOptimizer.getCacheStats()
 }; 

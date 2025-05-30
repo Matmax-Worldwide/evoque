@@ -1,3 +1,9 @@
+/**
+ * @fileoverview This module provides utility functions for managing client-side
+ * authorization headers. These functions are intended for browser environments
+ * as they interact with `document.cookie` and `window.fetch`.
+ */
+
 // Utility functions for managing authorization headers
 
 // Extend Window interface to include our custom properties
@@ -11,7 +17,9 @@ declare global {
 const isBrowser = typeof window !== 'undefined';
 
 /**
- * Get the current session token from cookies
+ * Gets the current session token from cookies.
+ * This function is browser-only due to its use of `document.cookie`.
+ * @returns The session token string if found, otherwise null.
  */
 export function getSessionToken(): string | null {
   if (!isBrowser) return null;
@@ -30,7 +38,10 @@ export function getSessionToken(): string | null {
 }
 
 /**
- * Set authorization header globally for all fetch requests
+ * Sets the authorization header globally for all `fetch` requests.
+ * This function is browser-only as it modifies `window.fetch`.
+ * @param token - The token to set in the Authorization header. If null, it effectively clears the global header.
+ * @returns void
  */
 export function setGlobalAuthorizationHeader(token: string | null): void {
   if (!isBrowser) return;
@@ -60,14 +71,19 @@ export function setGlobalAuthorizationHeader(token: string | null): void {
 }
 
 /**
- * Clear the global authorization header
+ * Clears the global authorization header by setting the token to null.
+ * This function is browser-only.
+ * @returns void
  */
 export function clearGlobalAuthorizationHeader(): void {
   setGlobalAuthorizationHeader(null);
 }
 
 /**
- * Initialize authorization header from stored token
+ * Initializes the global authorization header by attempting to retrieve
+ * the token from cookies and setting it.
+ * This function is browser-only.
+ * @returns void
  */
 export function initializeAuthorizationHeader(): void {
   const token = getSessionToken();
@@ -77,7 +93,10 @@ export function initializeAuthorizationHeader(): void {
 }
 
 /**
- * Create headers object with authorization if token is available
+ * Creates a headers object with an Authorization header if a session token is available.
+ * This function is browser-only due to its use of `getSessionToken`.
+ * @param additionalHeaders - Optional additional headers to include.
+ * @returns A record of header key-value pairs.
  */
 export function createAuthHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
   const token = getSessionToken();

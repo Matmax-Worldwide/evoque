@@ -1,6 +1,16 @@
+/**
+ * @fileoverview This module provides a function for deleting CMS sections
+ * via a GraphQL mutation.
+ */
 import { gqlRequest } from './graphql-client';
 
-// Función para eliminar una sección CMS
+/**
+ * Deletes a CMS section using a GraphQL mutation.
+ * @param sectionId - The ID of the CMS section to delete.
+ * @returns A promise that resolves to an object containing:
+ *          - `success` (boolean): True if the deletion was successful, false otherwise.
+ *          - `message` (string, optional): A message providing more details about the outcome.
+ */
 export async function deleteCMSSection(sectionId: string) {
   try {
     const mutation = `
