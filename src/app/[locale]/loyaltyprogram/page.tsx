@@ -26,7 +26,7 @@ import {
     TierProgressDisplayInfo
 } from '@/types/loyalty';
 
-import { GiftIcon, StarIcon, UsersIcon, ShoppingBagIcon, TrendingUpIcon, ActivityIcon, RefreshCwIcon, ExternalLinkIcon, BarChart3Icon, MegaphoneIcon } from 'lucide-react'; // Added MegaphoneIcon
+import { GiftIcon, StarIcon, UsersIcon, ShoppingBagIcon, TrendingUpIcon, ActivityIcon, RefreshCwIcon, ExternalLinkIcon, BarChart3Icon, MegaphoneIcon, AreaChartIcon } from 'lucide-react'; // Added AreaChartIcon
 
 const goldTierMock: Tier = { id: 'gold', name: 'Gold', minKillaToAchieve: 1000, killaToNextTier: 5000, iconName: 'ShieldCheckIcon' };
 const silverTierMock: Tier = { id: 'silver', name: 'Silver', minKillaToAchieve: 0, killaToNextTier: 1000, iconName: 'ShieldCheckIcon' };
@@ -134,17 +134,26 @@ export default function LoyaltyProgramPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6 bg-white p-1 rounded-lg shadow">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1 sm:gap-2 mb-6 bg-white p-1 rounded-lg shadow"> {/* Adjusted gap for smaller screens */}
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="history">Killa History</TabsTrigger>
           <TabsTrigger value="rewards">Rewards Catalog</TabsTrigger>
           <TabsTrigger value="tiers">Tier Progress</TabsTrigger>
           <TabsTrigger value="campaigns">Active Campaigns</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger> {/* New Tab */}
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-6">
             {profileError && ( <Card className="bg-red-50 border-red-500"><CardHeader><CardTitle className="text-red-700">Error Loading Killa Profile</CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-red-600">{profileError}</p><Button onClick={() => { clearProfileError(); refreshProfile(); }} variant="destructive"><RefreshCwIcon className="mr-2 h-4 w-4" /> Try Again</Button></CardContent></Card>)}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"><div className="lg:col-span-1"><PointsBalanceCard currentKilla={profile?.currentKilla ?? 0} pendingKilla={profile?.pendingKilla} tierName={profile?.tier?.name} isLoading={pageIsLoading && !profile} /></div><div className="lg:col-span-2">{tierProgressData && ( <TierProgressBar currentTierName={tierProgressData.currentTierName} nextTierName={tierProgressData.nextTierName} currentKillaInTier={tierProgressData.currentKillaInTier} killaNeededForNextTier={tierProgressData.killaNeededForNextTier} isLoading={pageIsLoading && !profile}/>)}{(pageIsLoading && !tierProgressData && !profileError) && (<TierProgressBar currentKillaInTier={0} killaNeededForNextTier={0} isLoading={true} />)}</div></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                    <PointsBalanceCard currentKilla={profile?.currentKilla ?? 0} pendingKilla={profile?.pendingKilla} tierName={profile?.tier?.name} isLoading={pageIsLoading && !profile} />
+                </div>
+                <div className="lg:col-span-2">
+                    {tierProgressData && ( <TierProgressBar currentTierName={tierProgressData.currentTierName} nextTierName={tierProgressData.nextTierName} currentKillaInTier={tierProgressData.currentKillaInTier} killaNeededForNextTier={tierProgressData.killaNeededForNextTier} isLoading={pageIsLoading && !profile}/>)}
+                    {(pageIsLoading && !tierProgressData && !profileError) && (<TierProgressBar currentKillaInTier={0} killaNeededForNextTier={0} isLoading={true} />)}
+                </div>
+            </div>
             <QuickStatsGrid stats={mockStats} isLoading={localStatsLoading || (pageIsLoading && mockStats.length === 0)} gridCols="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" />
             <RecentActivityFeed activities={mockActivities} isLoading={localActivitiesLoading || (pageIsLoading && mockActivities.length === 0)} maxItems={5} />
             <FeaturedRewardsCarousel rewards={mockRewards} isLoading={localRewardsLoading || (pageIsLoading && mockRewards.length === 0)} itemsToShow={3} />
@@ -192,23 +201,38 @@ export default function LoyaltyProgramPage() {
           </Card>
         </TabsContent>
 
-        {/* Updated Active Campaigns Tab Content */}
         <TabsContent value="campaigns" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Active Killa Campaigns</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Active Killa Campaigns</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-center">
               <p>Discover current campaigns to earn more Killa and get exclusive offers.</p>
               <Button asChild variant="default" className="bg-blue-600 hover:bg-blue-700">
                 <Link href={`/${locale}/loyaltyprogram/campaigns`}>
-                  <MegaphoneIcon className="mr-2 h-4 w-4" /> {/* Icon for campaigns */}
-                  Explore Campaigns
+                  <MegaphoneIcon className="mr-2 h-4 w-4" /> Explore Campaigns
                 </Link>
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* New Analytics Tab Content */}
+        <TabsContent value="analytics" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Killa Program Analytics</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-center">
+              <p>View statistics and trends related to the Killa Program activity.</p>
+              <Button asChild variant="default" className="bg-blue-600 hover:bg-blue-700">
+                <Link href={`/${locale}/loyaltyprogram/analytics`}>
+                  <AreaChartIcon className="mr-2 h-4 w-4" /> {/* Icon for analytics */}
+                  View Analytics Dashboard
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   );
