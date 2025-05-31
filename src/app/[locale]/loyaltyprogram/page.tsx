@@ -26,7 +26,7 @@ import {
     TierProgressDisplayInfo
 } from '@/types/loyalty';
 
-import { GiftIcon, StarIcon, UsersIcon, ShoppingBagIcon, TrendingUpIcon, ActivityIcon, RefreshCwIcon, ExternalLinkIcon } from 'lucide-react';
+import { GiftIcon, StarIcon, UsersIcon, ShoppingBagIcon, TrendingUpIcon, ActivityIcon, RefreshCwIcon, ExternalLinkIcon, BarChart3Icon } from 'lucide-react'; // Added BarChart3Icon for Tiers
 
 const goldTierMock: Tier = { id: 'gold', name: 'Gold', minKillaToAchieve: 1000, killaToNextTier: 5000, iconName: 'ShieldCheckIcon' };
 const silverTierMock: Tier = { id: 'silver', name: 'Silver', minKillaToAchieve: 0, killaToNextTier: 1000, iconName: 'ShieldCheckIcon' };
@@ -143,98 +143,67 @@ export default function LoyaltyProgramPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-6">
-          {profileError && (
-            <Card className="bg-red-50 border-red-500">
-              <CardHeader><CardTitle className="text-red-700">Error Loading Killa Profile</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-red-600">{profileError}</p>
-                <Button onClick={() => { clearProfileError(); refreshProfile(); }} variant="destructive">
-                  <RefreshCwIcon className="mr-2 h-4 w-4" /> Try Again
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <PointsBalanceCard
-                currentKilla={profile?.currentKilla ?? 0}
-                pendingKilla={profile?.pendingKilla}
-                tierName={profile?.tier?.name}
-                isLoading={pageIsLoading && !profile}
-              />
+            {profileError && ( <Card className="bg-red-50 border-red-500"><CardHeader><CardTitle className="text-red-700">Error Loading Killa Profile</CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-red-600">{profileError}</p><Button onClick={() => { clearProfileError(); refreshProfile(); }} variant="destructive"><RefreshCwIcon className="mr-2 h-4 w-4" /> Try Again</Button></CardContent></Card>)}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                    <PointsBalanceCard currentKilla={profile?.currentKilla ?? 0} pendingKilla={profile?.pendingKilla} tierName={profile?.tier?.name} isLoading={pageIsLoading && !profile} />
+                </div>
+                <div className="lg:col-span-2">
+                    {tierProgressData && ( <TierProgressBar currentTierName={tierProgressData.currentTierName} nextTierName={tierProgressData.nextTierName} currentKillaInTier={tierProgressData.currentKillaInTier} killaNeededForNextTier={tierProgressData.killaNeededForNextTier} isLoading={pageIsLoading && !profile}/>)}
+                    {(pageIsLoading && !tierProgressData && !profileError) && (<TierProgressBar currentKillaInTier={0} killaNeededForNextTier={0} isLoading={true} />)}
+                </div>
             </div>
-            <div className="lg:col-span-2">
-              {tierProgressData && (
-                <TierProgressBar
-                  currentTierName={tierProgressData.currentTierName}
-                  nextTierName={tierProgressData.nextTierName}
-                  currentKillaInTier={tierProgressData.currentKillaInTier}
-                  killaNeededForNextTier={tierProgressData.killaNeededForNextTier}
-                  isLoading={pageIsLoading && !profile}
-                />
-              )}
-              {(pageIsLoading && !tierProgressData && !profileError) && (
-                <TierProgressBar currentKillaInTier={0} killaNeededForNextTier={0} isLoading={true} />
-              )}
-            </div>
-          </div>
-
-          <QuickStatsGrid
-            stats={mockStats}
-            isLoading={localStatsLoading || (pageIsLoading && mockStats.length === 0)}
-            gridCols="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-          />
-          <RecentActivityFeed
-            activities={mockActivities}
-            isLoading={localActivitiesLoading || (pageIsLoading && mockActivities.length === 0)}
-            maxItems={5}
-          />
-          <FeaturedRewardsCarousel
-            rewards={mockRewards}
-            isLoading={localRewardsLoading || (pageIsLoading && mockRewards.length === 0)}
-            itemsToShow={3}
-          />
+            <QuickStatsGrid stats={mockStats} isLoading={localStatsLoading || (pageIsLoading && mockStats.length === 0)} gridCols="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" />
+            <RecentActivityFeed activities={mockActivities} isLoading={localActivitiesLoading || (pageIsLoading && mockActivities.length === 0)} maxItems={5} />
+            <FeaturedRewardsCarousel rewards={mockRewards} isLoading={localRewardsLoading || (pageIsLoading && mockRewards.length === 0)} itemsToShow={3} />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Killa History</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Killa History</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-center">
               <p>View your detailed Killa transaction history on a dedicated page.</p>
               <Button asChild variant="default" className="bg-blue-600 hover:bg-blue-700">
                 <Link href={`/${locale}/loyaltyprogram/history`}>
-                  <ExternalLinkIcon className="mr-2 h-4 w-4" />
-                  Go to Killa History Page
+                  <ExternalLinkIcon className="mr-2 h-4 w-4" /> Go to Killa History Page
                 </Link>
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Updated Rewards Catalog Tab Content */}
         <TabsContent value="rewards" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Rewards Catalog</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Rewards Catalog</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-center">
               <p>Browse available rewards and redeem your Killa.</p>
               <Button asChild variant="default" className="bg-blue-600 hover:bg-blue-700">
                 <Link href={`/${locale}/loyaltyprogram/rewards`}>
-                  <ExternalLinkIcon className="mr-2 h-4 w-4" />
-                  Go to Rewards Catalog
+                  <ExternalLinkIcon className="mr-2 h-4 w-4" /> Go to Rewards Catalog
                 </Link>
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Updated Tier Progress Tab Content */}
         <TabsContent value="tiers" className="mt-4">
-          <Card><CardHeader><CardTitle>Tier Progress</CardTitle></CardHeader><CardContent><p>Content for tier progress.</p></CardContent></Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Tier Progress & Benefits</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-center">
+              <p>Explore loyalty tiers, compare benefits, and see your progress.</p>
+              <Button asChild variant="default" className="bg-blue-600 hover:bg-blue-700">
+                <Link href={`/${locale}/loyaltyprogram/tiers`}>
+                  <BarChart3Icon className="mr-2 h-4 w-4" /> {/* Changed icon for variety */}
+                  View All Tiers
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
+
         <TabsContent value="campaigns" className="mt-4">
           <Card><CardHeader><CardTitle>Active Campaigns</CardTitle></CardHeader><CardContent><p>Content for active campaigns.</p></CardContent></Card>
         </TabsContent>
