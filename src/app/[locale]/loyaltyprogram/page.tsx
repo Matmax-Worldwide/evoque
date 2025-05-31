@@ -5,8 +5,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link'; // Import Link
-import { useParams } from 'next/navigation'; // Import useParams to get locale
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 import PointsBalanceCard from '@/components/loyaltyprogram/cards/PointsBalanceCard';
 import QuickStatsGrid from '@/components/loyaltyprogram/displays/QuickStatsGrid';
@@ -26,7 +26,7 @@ import {
     TierProgressDisplayInfo
 } from '@/types/loyalty';
 
-import { GiftIcon, StarIcon, UsersIcon, ShoppingBagIcon, TrendingUpIcon, ActivityIcon, RefreshCwIcon, ExternalLinkIcon } from 'lucide-react'; // Added ExternalLinkIcon
+import { GiftIcon, StarIcon, UsersIcon, ShoppingBagIcon, TrendingUpIcon, ActivityIcon, RefreshCwIcon, ExternalLinkIcon } from 'lucide-react';
 
 const goldTierMock: Tier = { id: 'gold', name: 'Gold', minKillaToAchieve: 1000, killaToNextTier: 5000, iconName: 'ShieldCheckIcon' };
 const silverTierMock: Tier = { id: 'silver', name: 'Silver', minKillaToAchieve: 0, killaToNextTier: 1000, iconName: 'ShieldCheckIcon' };
@@ -34,8 +34,8 @@ const silverTierMock: Tier = { id: 'silver', name: 'Silver', minKillaToAchieve: 
 export default function LoyaltyProgramPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const { profile, profileLoadingState, profileError, refreshProfile, clearProfileError } = useLoyaltyContext();
-  const params = useParams(); // Get locale and other params
-  const locale = params.locale as string; // Extract locale
+  const params = useParams();
+  const locale = params.locale as string;
 
   const [localStatsLoading, setLocalStatsLoading] = useState(true);
   const [mockStats, setMockStats] = useState<StatDisplayItem[]>([]);
@@ -120,11 +120,6 @@ export default function LoyaltyProgramPage() {
           loadNonProfileOverviewData();
       }
     }
-    // Add logic for other tabs if they need to fetch data on activation
-    // For example:
-    // if (activeTab === 'history') {
-    //   // Fetch history data if not already loaded for this tab
-    // }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, profileLoadingState, profile, refreshProfile, loadNonProfileOverviewData]);
 
@@ -148,7 +143,6 @@ export default function LoyaltyProgramPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-6">
-          {/* ... Overview content remains the same ... */}
           {profileError && (
             <Card className="bg-red-50 border-red-500">
               <CardHeader><CardTitle className="text-red-700">Error Loading Killa Profile</CardTitle></CardHeader>
@@ -203,7 +197,6 @@ export default function LoyaltyProgramPage() {
           />
         </TabsContent>
 
-        {/* Updated Killa History Tab Content */}
         <TabsContent value="history" className="mt-4">
           <Card>
             <CardHeader>
@@ -221,10 +214,24 @@ export default function LoyaltyProgramPage() {
           </Card>
         </TabsContent>
 
-        {/* Placeholder content for other tabs */}
+        {/* Updated Rewards Catalog Tab Content */}
         <TabsContent value="rewards" className="mt-4">
-          <Card><CardHeader><CardTitle>Rewards Catalog</CardTitle></CardHeader><CardContent><p>Content for rewards catalog.</p></CardContent></Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Rewards Catalog</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-center">
+              <p>Browse available rewards and redeem your Killa.</p>
+              <Button asChild variant="default" className="bg-blue-600 hover:bg-blue-700">
+                <Link href={`/${locale}/loyaltyprogram/rewards`}>
+                  <ExternalLinkIcon className="mr-2 h-4 w-4" />
+                  Go to Rewards Catalog
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
+
         <TabsContent value="tiers" className="mt-4">
           <Card><CardHeader><CardTitle>Tier Progress</CardTitle></CardHeader><CardContent><p>Content for tier progress.</p></CardContent></Card>
         </TabsContent>
