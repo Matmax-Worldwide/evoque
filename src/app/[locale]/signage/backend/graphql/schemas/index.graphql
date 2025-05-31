@@ -1,8 +1,52 @@
+# This file conceptually merges all feature-specific GraphQL schemas.
+# In a real setup with tools like @graphql-tools/merge, you might just point to
+# directories, and the tool handles merging. The type definitions for Device, Media,
+# Playlist, ScheduledEvent, etc., are expected to be loaded from their respective
+# .schema.graphql files.
+
 # import Query.*, Mutation.* from "./device.schema.graphql"
 # import Query.*, Mutation.* from "./media.schema.graphql"
 # import Query.*, Mutation.* from "./playlist.schema.graphql"
+# import Query.*, Mutation.* from "./schedule.schema.graphql" # New import conceptually
 
-# Merged Query Type
+# --- Scalar Types (Assumed to be defined globally or via a base schema) ---
+scalar DateTime
+# scalar Json # If used for fields like deviceSpecificConfig or item_settings
+
+# --- Enum Types (Defined in their respective schema files, e.g., device.schema.graphql, schedule.schema.graphql) ---
+# These are typically automatically available when the schema files defining them are loaded.
+# enum DeviceStatus
+# enum MediaType
+# enum TargetType
+
+
+# --- Object Types (Defined in their respective schema files) ---
+# These are typically automatically available when the schema files defining them are loaded.
+# type Device
+# type PairingCodeResponse
+# type DevicePairedResponse
+# type Media
+# type Playlist
+# type PlaylistItem
+# type ScheduledEvent
+# type EventTarget
+# type RecurrenceException
+
+
+# --- Input Types (Defined in their respective schema files) ---
+# These are typically automatically available when the schema files defining them are loaded.
+# input GenerateDevicePairingCodeInput
+# input PairSignageDeviceInput
+# input AssignPlaylistToDeviceInput
+# input UploadMediaInput
+# input CreatePlaylistInput
+# input AddMediaToPlaylistInput
+# input ScheduledEventTargetInput
+# input CreateScheduledEventInput
+# input UpdateScheduledEventInput
+
+
+# --- Merged Query Type ---
 type Query {
   # From device.schema.graphql
   getDevice(id: ID!): Device
@@ -16,9 +60,18 @@ type Query {
   getPlaylist(id: ID!, organizationId: ID!): Playlist
   listPlaylists(organizationId: ID!): [Playlist!]!
   getPlaylistForDevice(deviceId: ID!): Playlist
+
+  # From schedule.schema.graphql
+  getScheduledEvent(id: ID!): ScheduledEvent
+  listScheduledEvents(
+    organizationId: ID!
+    dateRangeStart: DateTime!
+    dateRangeEnd: DateTime!
+    targetIds: [ID!]
+  ): [ScheduledEvent!]!
 }
 
-# Merged Mutation Type
+# --- Merged Mutation Type ---
 type Mutation {
   # From device.schema.graphql
   generateDevicePairingCode(input: GenerateDevicePairingCodeInput!): PairingCodeResponse!
@@ -30,15 +83,10 @@ type Mutation {
 
   # From playlist.schema.graphql
   createPlaylist(input: CreatePlaylistInput!): Playlist!
-  addMediaToPlaylist(input: AddMediaToPlaylistInput!): Playlist!
-}
+  addMediaToPlaylist(input: AddMediaToPlaylistInput!): Playlist! # Returns the updated playlist
 
-# Ensure all referenced types (Device, Media, Playlist, PlaylistItem, inputs, etc.)
-# are defined in their respective schema files (device.schema.graphql, media.schema.graphql, playlist.schema.graphql)
-# or imported/loaded by the GraphQL server setup.
-# The .graphql files for device, media, and playlist already define these.
-# The main schema file (this one) primarily serves to stitch the Queries and Mutations.
-# Other types are typically made available globally by most GraphQL schema-building tools.
-# For example, the `Device` type defined in `device.schema.graphql` will be available
-# when `getDevice` query is resolved, without needing to redefine `Device` here.
-# Same for `Media`, `Playlist`, `PlaylistItem` and all input types.
+  # From schedule.schema.graphql
+  createScheduledEvent(input: CreateScheduledEventInput!): ScheduledEvent!
+  updateScheduledEvent(id: ID!, input: UpdateScheduledEventInput!): ScheduledEvent!
+  deleteScheduledEvent(id: ID!): ScheduledEvent
+}

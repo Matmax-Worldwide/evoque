@@ -1,0 +1,278 @@
+// src/app/[locale]/signage/backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Assumes DATABASE_URL is set in the environment
+}
+
+//---------------------------------------------------------------------
+// Device Models
+//---------------------------------------------------------------------
+
+enum DeviceStatus {
+  PENDING_PAIRING // Initial state when code is generated, before device pairs
+  UNPAIRED        // State if pairing fails or device is reset (not actively used by current logic but good to have)
+  ONLINE          // Device is paired and has recently communicated
+  OFFLINE         // Device is paired but has not communicated recently
+  ERROR           // Device has reported an error state
+}
+
+model Device {
+  id                   String  @id @default(uuid()) @db.Uuid
+  name                 String?
+  status               DeviceStatus @default(PENDING_PAIRING)
+  pairingCode          String? @unique // The raw code, not hyphenated
+  pairingCodeExpiresAt DateTime?
+
+  currentPlaylistId String?   @db.Uuid
+  currentPlaylist   Playlist? @relation("DeviceToPlaylist", fields: [currentPlaylistId], references: [id], onDelete: SetNull)
+
+  lastSeenAt       DateTime?
+  ipAddress        String?
+  macAddress       String?
+  firmwareVersion  String?
+  deviceSpecificConfig Json? // For any other config specific to this device
+
+  organizationId String // Assuming organization is a concept managed elsewhere, not a direct relation here yet
+                       // If Organization is a Prisma model:
+                       // organization   Organization @relation(fields: [organizationId], references: [id])
+                       // organizationId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+//---------------------------------------------------------------------
+// Media Models
+//---------------------------------------------------------------------
+
+enum MediaType {
+  VIDEO
+  IMAGE
+  AUDIO
+  URL    // For web content, etc.
+  WIDGET // For more complex embedded content
+}
+
+model Media {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    // Original filename or user-defined name
+  type      MediaType
+  mimeType  String?   // e.g., "video/mp4", "image/jpeg"
+  url       String    // URL to the media file (e.g., CDN link)
+  thumbnailUrl String? // URL to a thumbnail for the media
+
+  sizeBytes       Int?
+  durationSeconds Int?    // For time-based media (video, audio)
+  width           Int?    // For visual media (image, video)
+  height          Int?    // For visual media (image, video)
+  metadata        Json?   // For EXIF, video encoding details, etc.
+
+  // Assuming User is a concept managed elsewhere
+  // If User is a Prisma model:
+  // uploadedByUser User   @relation(fields: [uploadedByUserId], references: [id])
+  uploadedByUserId String // @db.Uuid if User model exists with Uuid id
+
+  organizationId String // @db.Uuid if Organization model exists
+                       // organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  playlistItems PlaylistItem[] // Media can be in many playlist items
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([uploadedByUserId])
+}
+
+//---------------------------------------------------------------------
+// Playlist Models
+//---------------------------------------------------------------------
+
+model Playlist {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+
+  // Assuming User is a concept managed elsewhere
+  // If User is a Prisma model:
+  // createdByUser User   @relation(fields: [createdByUserId], references: [id])
+  createdByUserId String // @db.Uuid if User model exists
+
+  organizationId String // @db.Uuid if Organization model exists
+                       // organization   Organization @relation(fields: [organizationId], references: [id])
+
+  items PlaylistItem[] @relation("PlaylistToItems") // Ordered items in the playlist
+
+  assignedDevices Device[] @relation("DeviceToPlaylist") // Devices this playlist is assigned to
+  scheduledEvents ScheduledEvent[] // Playlists can be scheduled multiple times
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([createdByUserId])
+}
+
+model PlaylistItem {
+  id        String @id @default(uuid()) @db.Uuid
+  order     Int    // 0-indexed order within the playlist
+  durationSeconds Int  // How long this specific item should play in this playlist
+
+  settings Json? // Item-specific settings: transitions, volume, fit (contain/cover), etc.
+                 // Example: { "transitionFromPrevious": { "type": "FADE", "duration": 1 }, "volume": 80 }
+
+  playlist   Playlist @relation("PlaylistToItems", fields: [playlistId], references: [id], onDelete: Cascade)
+  playlistId String   @db.Uuid
+
+  media    Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade) // Cascade delete if media is deleted? Or Restrict?
+  mediaId  String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Note: Prisma does not auto-update this on relation changes by default.
+                                // Application logic might need to touch `updatedAt` on the Playlist.
+
+  @@unique([playlistId, order]) // Ensures order is unique within a playlist
+  @@index([playlistId])
+  @@index([mediaId])
+}
+
+// If you have an Organization model, it might look like this:
+// model Organization {
+//   id          String    @id @default(uuid()) @db.Uuid
+//   name        String
+//   devices     Device[]
+//   media       Media[]
+//   playlists   Playlist[]
+//   // ... other organization fields
+//   createdAt   DateTime  @default(now())
+//   updatedAt   DateTime  @updatedAt
+// }
+
+// If you have a User model:
+// model User {
+//   id            String     @id @default(uuid()) @db.Uuid
+//   email         String     @unique
+//   name          String?
+//   // ... other user fields (password hash, roles, etc.)
+//   mediaUploads  Media[]
+//   playlistsCreated Playlist[]
+//   createdAt     DateTime   @default(now())
+//   updatedAt     DateTime   @updatedAt
+// }
+
+//---------------------------------------------------------------------
+// Scheduling Models
+//---------------------------------------------------------------------
+
+enum TargetType {
+  DEVICE
+  DEVICE_GROUP // Conceptual, actual DeviceGroup model not defined in this schema yet
+}
+
+model ScheduledEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String?  // Optional user-defined title for the schedule entry
+  startTime DateTime // Start time of the first occurrence or the single event
+  endTime   DateTime // End time of the first occurrence or the single event
+  allDay    Boolean  @default(false) // If the event is an all-day event
+
+  // Recurrence Information
+  // Uses iCalendar RRULE string format (https://icalendar.org/iCalendar-RFC-5545/3-8-5-3-recurrence-rule.html)
+  // Example: "FREQ=WEEKLY;BYDAY=MO,WE,FR;UNTIL=20241231T235959Z"
+  // Parsing and generating these RRULEs will be handled by application logic (likely using a library).
+  rrule          String?  // Recurrence rule string
+  timezone       String?  // Timezone for the event, e.g., "America/New_York". Important for recurrence.
+
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade) // What content to play
+  playlistId String   @db.Uuid
+
+  // Targeting: For simplicity, storing arrays of IDs.
+  // A more normalized approach might use a separate EventTarget junction table,
+  // especially if targets can have specific roles or settings per event.
+  targetDeviceIds    String[] @db.Uuid // Array of Device IDs
+  // For conceptual device groups. If DeviceGroup becomes a real model, this could be a relation.
+  targetDeviceGroupIds String[] // Array of conceptual Device Group IDs
+
+  // Denormalized names for easier display in some contexts, updated by application logic
+  // These are optional and primarily for read optimization if needed.
+  // Not strictly necessary if relations are always followed.
+  // playlistName String?
+  // targetNames  String[]
+
+  // Who created/owns this schedule
+  organizationId String   // Matches organizationId on Playlist and Device
+  // createdByUserId String // Matches userId on Playlist
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exceptions RecurrenceException[] // Dates/times when a recurring event instance should be skipped or modified
+
+  @@index([playlistId])
+  @@index([organizationId])
+  @@index([startTime]) // For querying by date range
+  @@index([endTime])
+}
+
+model RecurrenceException {
+  id        String   @id @default(uuid()) @db.Uuid
+  event     ScheduledEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String   @db.Uuid
+
+  originalInstanceDate DateTime // The specific occurrence date of the recurring event that this exception applies to.
+                                 // This should be the original start time of the instance being overridden.
+
+  // If isCancelled is true, this instance is simply skipped.
+  isCancelled Boolean @default(false)
+
+  // If not cancelled, these fields can override the original instance's properties.
+  // If null, the original instance's property is used.
+  newStartTime DateTime?
+  newEndTime   DateTime?
+  newPlaylistId String? @db.Uuid
+  newPlaylist   Playlist? @relation("ExceptionToPlaylist", fields: [newPlaylistId], references: [id], onDelete:SetNull)
+
+  // Potentially new targets for this specific instance, if overriding is needed
+  // newTargetDeviceIds    String[] @db.Uuid
+  // newTargetDeviceGroupIds String[]
+
+  // newTitle String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, originalInstanceDate]) // An event can only have one exception for a given original date.
+  @@index([eventId])
+  @@index([newPlaylistId])
+}
+
+// Conceptual DeviceGroup model (if you decide to make it a first-class entity)
+// model DeviceGroup {
+//   id             String   @id @default(uuid()) @db.Uuid
+//   name           String
+//   organizationId String
+//   devices        Device[] @relation("DeviceToGroup") // Many-to-many relation with Device
+//   // ... other group properties
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// If using a many-to-many for DeviceGroup and Device:
+// model DevicesOnDeviceGroups {
+//   device    Device     @relation(fields: [deviceId], references: [id])
+//   deviceId  String     @db.Uuid
+//   group     DeviceGroup @relation(fields: [deviceGroupId], references: [id])
+//   deviceGroupId String @db.Uuid
+//   assignedAt DateTime @default(now())
+//
+//   @@id([deviceId, deviceGroupId])
+// }

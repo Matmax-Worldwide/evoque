@@ -1,13 +1,24 @@
-import { GraphQLMedia, UploadMediaInput } from './../types/media.types';
+// src/app/[locale]/signage/backend/graphql/resolvers/media.resolvers.ts
 
-// Placeholder for media data (in-memory store)
-// In a real app, use a database.
-interface StoredMedia extends GraphQLMedia {
-  // any internal-only fields if needed
-}
-const mediaStore: Map<string, StoredMedia> = new Map();
+import { PrismaClient, MediaType, Media as PrismaMedia } from '@prisma/client';
+// Standard import path for a shared Prisma Client instance
+import prisma from '@/lib/prisma';
 
-// Helper to generate a random UUID (simple version for demo)
+// Assuming GraphQLMedia and UploadMediaInput would be imported from types
+// import { GraphQLMedia, UploadMediaInput } from './../types/media.types';
+
+// Helper to serialize dates (if not handled by GraphQL server/scalars)
+const serializeMediaDates = (media: PrismaMedia | null) => {
+    if (!media) return null;
+    return {
+        ...media,
+        createdAt: media.createdAt.toISOString(),
+        updatedAt: media.updatedAt.toISOString(),
+    };
+};
+
+// Helper (if not already globally available or imported)
+// Used for pre-generating ID for simulated URL construction
 const uuidv4 = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -15,28 +26,30 @@ const uuidv4 = () => {
   });
 };
 
+
 export const mediaResolvers = {
   Query: {
-    getMedia: async (_: any, { id, organizationId }: { id: string, organizationId: string }): Promise<StoredMedia | null> => {
-      const media = mediaStore.get(id);
-      if (media && media.organizationId === organizationId) {
-        return media;
+    getMedia: async (_: any, { id, organizationId }: { id: string, organizationId: string }) => {
+      const media = await prisma.media.findUnique({
+        where: { id },
+      });
+      // Validate organizationId if media is found
+      if (media && media.organizationId !== organizationId) {
+        // Or throw an authorization error
+        console.warn(`Attempt to access media ${id} from unauthorized organization ${organizationId}`);
+        return null;
       }
-      console.log(`Media not found or org mismatch: id=${id}, orgId=${organizationId}`);
-      return null;
+      return serializeMediaDates(media);
     },
-    listMedia: async (_: any, { organizationId }: { organizationId: string }): Promise<StoredMedia[]> => {
-      const orgMedia: StoredMedia[] = [];
-      for (const media of mediaStore.values()) {
-        if (media.organizationId === organizationId) {
-          orgMedia.push(media);
-        }
-      }
-      return orgMedia;
+    listMedia: async (_: any, { organizationId }: { organizationId: string }) => {
+      const mediaItems = await prisma.media.findMany({
+        where: { organizationId },
+      });
+      return mediaItems.map(serializeMediaDates);
     },
   },
   Mutation: {
-    uploadMedia: async (_: any, { input }: { input: UploadMediaInput }): Promise<StoredMedia> => {
+    uploadMedia: async (_: any, { input }: { input: { organizationId: string, uploadedByUserId: string, name: string, type: string, mimeType?: string, sizeBytes?: number, durationSeconds?: number, width?: number, height?: number } }) => {
       const {
         organizationId,
         uploadedByUserId,
@@ -49,36 +62,39 @@ export const mediaResolvers = {
         height
       } = input;
 
-      const mediaId = uuidv4();
-      const nowISO = new Date().toISOString();
-
-      // Simulate CDN URL
-      const simulatedUrl = `https://cdn.example.com/${organizationId}/${mediaId}/${name.replace(/\s+/g, '_')}`;
-      const simulatedThumbnailUrl = type === 'IMAGE' || type === 'VIDEO'
-        ? `https://cdn.example.com/${organizationId}/${mediaId}/thumbnail.jpg`
+      const generatedId = uuidv4();
+      const simulatedUrl = `https://cdn.example.com/${organizationId}/${generatedId}/${name.replace(/\s+/g, '_')}`;
+      const simulatedThumbnailUrl = (type === 'VIDEO' || type === 'IMAGE')
+        ? `https://cdn.example.com/${organizationId}/${generatedId}/thumbnail.jpg`
         : undefined;
 
-      const newMedia: StoredMedia = {
-        id: mediaId,
-        name,
-        type: type as 'VIDEO' | 'IMAGE' | 'AUDIO' | 'URL' | 'WIDGET', // Cast for store
-        mimeType: mimeType || null,
-        url: simulatedUrl,
-        thumbnailUrl: simulatedThumbnailUrl || null,
-        sizeBytes: sizeBytes || null,
-        durationSeconds: durationSeconds || null,
-        width: width || null,
-        height: height || null,
-        organizationId,
-        uploadedByUserId,
-        createdAt: nowISO,
-        updatedAt: nowISO,
-      };
+      const newMedia = await prisma.media.create({
+        data: {
+          id: generatedId,
+          name,
+          type: type as MediaType, // Cast to Prisma enum MediaType
+          mimeType: mimeType || null,
+          url: simulatedUrl,
+          thumbnailUrl: simulatedThumbnailUrl || null,
+          sizeBytes: sizeBytes || null,
+          durationSeconds: durationSeconds || null,
+          width: width || null,
+          height: height || null,
+          organizationId,
+          uploadedByUserId,
+          // metadata: Prisma.JsonNull, // Or specific JSON structure
+        }
+      });
 
-      mediaStore.set(mediaId, newMedia);
-      console.log(`Media '${name}' (ID: ${mediaId}) uploaded for org ${organizationId}. URL: ${simulatedUrl}`);
-
-      return newMedia;
+      console.log(`Media '${name}' (ID: ${newMedia.id}) metadata saved for org ${organizationId}. URL: ${newMedia.url}`);
+      return serializeMediaDates(newMedia);
     },
   },
 };
+
+// Note: The in-memory 'mediaStore' or 'mediaStoreInstance' and its export are removed.
+// If playlist.resolvers.ts (or any other resolver) depended on an exported in-memory store
+// from this file, that dependency is now broken and needs to be updated to use Prisma,
+// or the cross-resolver logic in the root resolver (index.ts) needs to be re-evaluated.
+// Specifically, the __setMediaStoreRef function in playlist.resolvers.ts will no longer
+// receive an in-memory store from here. Playlist resolvers should fetch media data via Prisma.

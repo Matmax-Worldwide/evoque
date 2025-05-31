@@ -1,84 +1,60 @@
-import {
+// src/app/[locale]/signage/backend/graphql/resolvers/index.ts
+
+import { deviceResolvers } from './device.resolvers';
+import { mediaResolvers } from './media.resolvers';
+import { playlistResolvers } from './playlist.resolvers';
+import { scheduleResolvers } from './schedule.resolvers'; // Added scheduleResolvers
+import { merge } from 'lodash'; // Or any other deep merge utility
+
+// The refactored resolvers (device, media, playlist) and the new scheduleResolvers
+// no longer rely on injected in-memory stores (for those refactored).
+// They assume a Prisma Client instance is available,
+// typically via context or a shared import like '@/lib/prisma'.
+
+// The getRootResolver function now simply merges the resolver maps.
+// Any necessary Prisma client instance should be provided to the GraphQL server
+// execution context, which then passes it to each resolver.
+
+export const getRootResolver = () => {
+  // Deep merge the individual resolver objects.
+  // Lodash merge handles nested Query, Mutation, and Type resolvers correctly.
+  return merge(
+    {},
     deviceResolvers,
-    __setPlaylistsStoreRef_DeviceResolver,
-    pairedDevicesStoreInstance // Expecting device.resolvers.ts to export this
-} from './device.resolvers';
-import {
     mediaResolvers,
-    // mediaStoreInstance // Expecting media.resolvers.ts to export this (will attempt dynamic require)
-} from './media.resolvers';
-import {
     playlistResolvers,
-    __setMediaStoreRef,
-    __setPairedDevicesStoreRef_PlaylistResolver,
-    playlistsStoreInstance // Expecting playlist.resolvers.ts to export this
-} from './playlist.resolvers';
-import { merge } from 'lodash';
-import { GraphQLMedia } from './../types/media.types';
-
-// --- Attempt to wire up shared stores ---
-// This is a hacky way to do dependency injection for the in-memory demo.
-// In a real app, use a proper DI framework or pass context through resolvers.
-
-// 1. Inject mediaStore into playlistResolvers
-try {
-  const mediaModule = require('./media.resolvers');
-  let actualMediaStore: Map<string, GraphQLMedia> | undefined;
-
-  if (mediaModule.mediaStoreInstance) {
-    actualMediaStore = mediaModule.mediaStoreInstance;
-  } else if (mediaModule.mediaStore) {
-    actualMediaStore = mediaModule.mediaStore;
-  }
-
-  if (actualMediaStore) {
-    __setMediaStoreRef(actualMediaStore);
-    console.log("Successfully injected mediaStore into playlistResolvers.");
-  } else {
-    console.warn(
-      "Failed to find 'mediaStoreInstance' or 'mediaStore' export in media.resolvers.ts. " +
-      "PlaylistItem.media resolution will likely fail."
-    );
-  }
-} catch (e) {
-  console.warn(
-    "Error importing/accessing mediaStoreInstance from media.resolvers.ts. " +
-    "PlaylistItem.media resolution will likely fail.", e
+    scheduleResolvers // Added scheduleResolvers to the merge
   );
-}
+};
 
-// 2. Inject playlistsStore into deviceResolvers
-if (playlistsStoreInstance) {
-  __setPlaylistsStoreRef_DeviceResolver(playlistsStoreInstance);
-  console.log("Successfully injected playlistsStoreInstance into deviceResolvers.");
-} else {
-  console.warn(
-    "playlistsStoreInstance is not available from playlist.resolvers.ts. " +
-    "assignPlaylistToDevice mutation in deviceResolvers might fail to validate playlists."
-  );
-}
+// Example of how it might look with manual merging if lodash isn't preferred:
+// export const getManualRootResolver = () => {
+//   return {
+//     Query: {
+//       ...deviceResolvers.Query,
+//       ...mediaResolvers.Query,
+//       ...playlistResolvers.Query,
+//       ...scheduleResolvers.Query, // Added schedule queries
+//     },
+//     Mutation: {
+//       ...deviceResolvers.Mutation,
+//       ...mediaResolvers.Mutation,
+//       ...playlistResolvers.Mutation,
+//       ...scheduleResolvers.Mutation, // Added schedule mutations
+//     },
+//     // If there are type-specific resolvers like Device.currentPlaylist, PlaylistItem.media,
+//     // ScheduledEvent.playlist, etc., they need to be merged correctly under their type names.
+//     Device: deviceResolvers.Device,
+//     // PlaylistItem: playlistResolvers.PlaylistItem, (if it exists)
+//     // Media: mediaResolvers.Media, (if it exists)
+//     ScheduledEvent: scheduleResolvers.ScheduledEvent, // Added ScheduledEvent type resolver
+//     // RecurrenceException: scheduleResolvers.RecurrenceException, (if it exists)
+//   };
+// };
 
-// 3. Inject pairedDevicesStore into playlistResolvers
-if (pairedDevicesStoreInstance) {
-  __setPairedDevicesStoreRef_PlaylistResolver(pairedDevicesStoreInstance);
-  console.log("Successfully injected pairedDevicesStoreInstance into playlistResolvers.");
-} else {
-  console.warn(
-    "pairedDevicesStoreInstance is not available from device.resolvers.ts. " +
-    "getPlaylistForDevice query in playlistResolvers might fail."
-  );
-}
-
-// --- Merge all resolvers ---
-export const rootResolver = merge(
-  {},
-  deviceResolvers,
-  mediaResolvers,
-  playlistResolvers
-);
-
-// Note on store exports:
-// device.resolvers.ts should have: `export const pairedDevicesStoreInstance = new Map<string, StoredDevice>();`
-// playlist.resolvers.ts should have: `export const playlistsStoreInstance = new Map<string, StoredPlaylist>();`
-// media.resolvers.ts (from a previous step) should ideally have: `export const mediaStoreInstance = mediaStore;`
-// If these exports are not in place, the injections above will fail.
+// Note: If any of the individual resolver files (device.resolvers.ts, etc.)
+// define type-specific resolvers (e.g., for fields on 'Device' or 'Playlist' or 'ScheduledEvent'),
+// lodash.merge will handle them correctly. For manual merge, ensure they are included.
+// For example, device.resolvers.ts includes a 'Device' type resolver for 'currentPlaylist'.
+// schedule.resolvers.ts includes a 'ScheduledEvent' type resolver.
+// These should be automatically merged by lodash.merge.

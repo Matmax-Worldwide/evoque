@@ -1,0 +1,128 @@
+# src/app/[locale]/signage/backend/graphql/schemas/schedule.schema.graphql
+
+scalar DateTime # Assuming a DateTime scalar is defined globally for ISO date strings
+
+# Represents a scheduled event for playing content
+type ScheduledEvent {
+  id: ID!
+  title: String
+  startTime: DateTime!
+  endTime: DateTime!
+  allDay: Boolean!
+
+  rrule: String # iCalendar RRULE string
+  timezone: String
+
+  playlistId: ID!
+  playlist: Playlist # Resolved Playlist object (assumes Playlist type is defined elsewhere)
+
+  # For simplicity in GraphQL, we can represent targets as a list of generic target objects
+  # or have separate fields if type distinction is always needed at this level.
+  # Let's use a union or a generic target type for now.
+  targets: [EventTarget!]!
+
+  # Denormalized names for display convenience, matching what might be stored or resolved
+  playlistName: String
+  targetNames: [String!]
+
+  organizationId: ID!
+  # createdByUserId: ID
+
+  # Recurrence exceptions (if any)
+  exceptions: [RecurrenceException!]
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# Represents a target for a scheduled event (could be a Device or a conceptual Device Group)
+type EventTarget {
+  id: ID!
+  name: String!
+  type: TargetType! # DEVICE or DEVICE_GROUP
+}
+
+enum TargetType {
+  DEVICE
+  DEVICE_GROUP
+}
+
+# Represents an exception to a recurring event
+type RecurrenceException {
+  id: ID!
+  # eventId: ID! # Usually not exposed directly if fetched as part of ScheduledEvent
+  originalInstanceDate: DateTime! # The date of the original instance this exception applies to
+  isCancelled: Boolean!
+  newStartTime: DateTime
+  newEndTime: DateTime
+  newPlaylistId: ID
+  newPlaylist: Playlist # Resolved new Playlist object for this instance
+  # newTargets: [EventTarget!] # If targets can be overridden per instance
+  # newTitle: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# --- Inputs ---
+
+input ScheduledEventTargetInput {
+  id: ID!
+  type: TargetType! # DEVICE or DEVICE_GROUP
+}
+
+input CreateScheduledEventInput {
+  title: String
+  playlistId: ID!
+  targetInputs: [ScheduledEventTargetInput!]! # Use this for creating/updating targets
+  startTime: DateTime! # ISO String
+  endTime: DateTime!   # ISO String
+  allDay: Boolean
+  rrule: String
+  timezone: String
+  organizationId: ID! # Usually from context or system settings
+  # createdByUserId: ID! # Usually from authenticated user context
+}
+
+input UpdateScheduledEventInput {
+  title: String
+  playlistId: ID
+  targetInputs: [ScheduledEventTargetInput!] # Replace all targets if provided
+  startTime: DateTime
+  endTime: DateTime
+  allDay: Boolean
+  rrule: String
+  timezone: String
+  # organizationId and createdByUserId typically not updatable directly
+}
+
+# Input for recurrence exceptions (simplified for now)
+# A full exception handling system would be more complex.
+# input RecurrenceExceptionInput { ... }
+
+
+# --- Queries and Mutations ---
+
+# This type definition will be merged with other Query types
+# in the main schema (e.g. index.graphql)
+type Query {
+  getScheduledEvent(id: ID!): ScheduledEvent
+
+  listScheduledEvents(
+    organizationId: ID! # Usually from context
+    dateRangeStart: DateTime!
+    dateRangeEnd: DateTime!
+    targetIds: [ID!] # Optional: filter by specific devices or groups
+  ): [ScheduledEvent!]!
+}
+
+# This type definition will be merged with other Mutation types
+type Mutation {
+  createScheduledEvent(input: CreateScheduledEventInput!): ScheduledEvent!
+  updateScheduledEvent(id: ID!, input: UpdateScheduledEventInput!): ScheduledEvent!
+  deleteScheduledEvent(id: ID!): ScheduledEvent # Return deleted event or a success boolean
+
+  # More granular mutations for recurrence exceptions might be needed later
+  # addRecurrenceException(eventId: ID!, exceptionInput: RecurrenceExceptionInput!): ScheduledEvent!
+  # updateRecurrenceException(exceptionId: ID!, exceptionInput: UpdateRecurrenceExceptionInput!): RecurrenceException!
+  # deleteRecurrenceException(exceptionId: ID!): RecurrenceException!
+}
