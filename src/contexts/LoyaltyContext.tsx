@@ -1,44 +1,41 @@
 // src/contexts/LoyaltyContext.tsx
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-// Import updated types
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { Tier, LoyaltyProfile, PointsTransaction, Reward } from '@/types/loyalty';
 
-// Updated mock tier data using "Killa" field names
-const silverTierMock: Tier = {
-  id: 'silver',
-  name: 'Silver',
-  minKillaToAchieve: 0,
-  killaToNextTier: 1000,
-  iconName: 'ShieldCheckIcon'
-};
-const goldTierMock: Tier = {
-  id: 'gold',
-  name: 'Gold',
-  minKillaToAchieve: 1000,
-  killaToNextTier: 5000,
-  iconName: 'ShieldCheckIcon'
-};
+// Mock Tiers (already Killa-branded)
+const silverTierMock: Tier = { id: 'silver', name: 'Silver', minKillaToAchieve: 0, killaToNextTier: 1000, iconName: 'ShieldCheckIcon' };
 
-
+// Loading/Status types
 type ProfileLoadingState = 'idle' | 'loading' | 'success' | 'error';
+type WalletStatus = 'idle' | 'connecting' | 'connected' | 'error' | 'disconnected';
 
 interface LoyaltyContextState {
   profile: LoyaltyProfile | null;
   profileLoadingState: ProfileLoadingState;
   profileError: string | null;
 
+  // Wallet States
+  walletStatus: WalletStatus;
+  connectedWalletAddress: string | null;
+  walletError: string | null;
+
+  // Other existing states (can be refined or removed if not globally needed)
   pendingTransactions: PointsTransaction[];
   selectedRewards: Reward[];
   notifications: string[];
-  walletStatus: 'connected' | 'disconnected' | 'connecting' | 'idle';
 }
 
 interface LoyaltyContextActions {
   refreshProfile: () => Promise<void>;
   queueNotification: (message: string) => void;
   clearProfileError: () => void;
+
+  // Wallet Actions
+  connectWallet: () => Promise<void>;
+  disconnectWallet: () => void;
+  clearWalletError: () => void;
 }
 
 type LoyaltyContextType = LoyaltyContextState & LoyaltyContextActions;
@@ -46,28 +43,34 @@ type LoyaltyContextType = LoyaltyContextState & LoyaltyContextActions;
 const LoyaltyContext = createContext<LoyaltyContextType | undefined>(undefined);
 
 export const LoyaltyContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Profile states
   const [profile, setProfile] = useState<LoyaltyProfile | null>(null);
   const [profileLoadingState, setProfileLoadingState] = useState<ProfileLoadingState>('idle');
   const [profileError, setProfileError] = useState<string | null>(null);
 
+  // Wallet states
+  const [walletStatus, setWalletStatus] = useState<WalletStatus>('idle');
+  const [connectedWalletAddress, setConnectedWalletAddress] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  // Other states
   const [pendingTransactions, setPendingTransactions] = useState<PointsTransaction[]>([]);
   const [selectedRewards, setSelectedRewards] = useState<Reward[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [walletStatus, setWalletStatus] = useState<'connected' | 'disconnected' | 'connecting' | 'idle'>('idle');
 
+
+  // Profile Actions
   const refreshProfile = useCallback(async () => {
     console.log('Context: refreshProfile called to fetch Killa profile');
     setProfileLoadingState('loading');
     setProfileError(null);
     try {
       await new Promise(resolve => setTimeout(resolve, 1200));
-
-      // Updated mock profile data with "Killa" field names
       const mockFetchedProfile: LoyaltyProfile = {
         userId: 'user-123-context',
-        currentKilla: 820, // Renamed from currentPoints
-        pendingKilla: 75,  // Renamed from pendingPoints
-        lifetimeKilla: 2800, // Renamed from lifetimePoints
+        currentKilla: 820,
+        pendingKilla: 75,
+        lifetimeKilla: 2800,
         joinedDate: new Date(Date.now() - 120 * 86400000).toISOString(),
         tier: silverTierMock,
       };
@@ -75,17 +78,10 @@ export const LoyaltyContextProvider: React.FC<{ children: ReactNode }> = ({ chil
       setProfileLoadingState('success');
     } catch (err) {
       console.error('Context: Failed to refresh Killa profile', err);
-      setProfileError(err instanceof Error ? err.message : 'Failed to load Killa profile.');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load Killa profile.';
+      setProfileError(errorMsg);
       setProfileLoadingState('error');
     }
-  }, []);
-
-  const queueNotification = useCallback((message: string) => {
-    console.log('Context: queueNotification called with', message);
-    setNotifications(prev => [...prev, message]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(msg => msg !== message));
-    }, 5000);
   }, []);
 
   const clearProfileError = useCallback(() => {
@@ -95,17 +91,76 @@ export const LoyaltyContextProvider: React.FC<{ children: ReactNode }> = ({ chil
     }
   }, [profileLoadingState]);
 
+  // Wallet Actions Implementation
+  const connectWallet = useCallback(async () => {
+    console.log('Context: connectWallet action initiated');
+    setWalletStatus('connecting');
+    setWalletError(null);
+    setConnectedWalletAddress(null); // Clear previous address during new attempt
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate Web3 provider interaction
+
+      // Simulate success/failure
+      if (Math.random() > 0.2) { // 80% success rate
+        const mockAddress = `0x${Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+        setConnectedWalletAddress(mockAddress);
+        setWalletStatus('connected');
+        console.log('Context: Wallet connected successfully', mockAddress);
+        // queueNotification(`Wallet ${mockAddress.substring(0,6)}...${mockAddress.substring(mockAddress.length-4)} connected!`);
+      } else {
+        throw new Error('Failed to connect to wallet. User rejected or provider error.');
+      }
+    } catch (err) {
+      console.error('Context: connectWallet failed', err);
+      const errorMsg = err instanceof Error ? err.message : 'An unknown wallet connection error occurred.';
+      setWalletError(errorMsg);
+      setWalletStatus('error');
+    }
+  }, []);
+
+  const disconnectWallet = useCallback(() => {
+    console.log('Context: disconnectWallet action initiated');
+    setConnectedWalletAddress(null);
+    setWalletStatus('disconnected');
+    setWalletError(null); // Clear any previous errors on disconnect
+    // queueNotification('Wallet disconnected.');
+  }, []);
+
+  const clearWalletError = useCallback(() => {
+    setWalletError(null);
+    if(walletStatus === 'error') {
+        setWalletStatus('idle'); // Reset to idle so user can try again
+    }
+  }, [walletStatus]);
+
+
+  // Other Actions
+  const queueNotification = useCallback((message: string) => {
+    console.log('Context: queueNotification called with', message);
+    setNotifications(prev => [...prev, message]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(msg => msg !== message));
+    }, 5000);
+  }, []);
+
+
   const contextValue: LoyaltyContextType = {
     profile,
     profileLoadingState,
     profileError,
+    walletStatus,
+    connectedWalletAddress,
+    walletError,
     pendingTransactions,
     selectedRewards,
     notifications,
-    walletStatus,
     refreshProfile,
     queueNotification,
     clearProfileError,
+    connectWallet,
+    disconnectWallet,
+    clearWalletError,
   };
 
   return (
