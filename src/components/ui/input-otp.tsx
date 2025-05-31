@@ -1,3 +1,25 @@
+/**
+ * @fileoverview This file provides a suite of components for creating One-Time
+ * Password (OTP) input fields. These components facilitate the input of
+ * fixed-length codes, typically used for authentication or verification.
+ *
+ * The components are built on top of the `input-otp` library and are styled
+ * using Tailwind CSS. The `lucide-react` library is used for icons, such as
+ * the separator icon.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with customizations primarily focused on
+ * applying Tailwind CSS classes for styling and integrating the `input-otp` library
+ * into a composable set of React components.
+ *
+ * Exported Components and their general roles:
+ * - `InputOTP`: The main root component that manages the OTP input logic and state.
+ * - `InputOTPGroup`: A container to group the OTP input slots.
+ * - `InputOTPSlot`: Represents an individual character slot within the OTP input.
+ *   It displays the character and a fake caret when active.
+ * - `InputOTPSeparator`: A component to display a visual separator (e.g., a hyphen)
+ *   between groups of OTP slots.
+ */
 "use client"
 
 import * as React from "react"

@@ -1,3 +1,35 @@
+/**
+ * @fileoverview This file provides a suite of components for creating complex
+ * navigation menus, suitable for primary site navigation that often includes
+ * dropdowns or mega menus. These components are built on top of the Radix UI
+ * NavigationMenu primitives (`@radix-ui/react-navigation-menu`) and are styled
+ * using Tailwind CSS. Icons (e.g., for dropdown indicators) are sourced from
+ * `lucide-react`.
+ *
+ * The implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui. Customizations are primarily focused on
+ * applying Tailwind CSS classes for styling and integrating the Radix UI primitives
+ * into a composable set of React components.
+ *
+ * Exported Components and their general roles:
+ * - `NavigationMenu`: The root component that wraps the entire navigation menu structure.
+ * - `NavigationMenuList`: A container for the list of top-level navigation items.
+ * - `NavigationMenuItem`: Represents an individual item within the `NavigationMenuList`.
+ * - `NavigationMenuTrigger`: The element (typically a button or link) that toggles
+ *   the visibility of associated `NavigationMenuContent`. It often includes a dropdown indicator icon.
+ * - `NavigationMenuContent`: The panel that appears when a `NavigationMenuTrigger` is activated,
+ *   containing further links or content (e.g., a dropdown or mega menu).
+ * - `NavigationMenuLink`: A component to be used for links within the navigation menu,
+ *   integrating with Radix UI's navigation link behavior.
+ * - `NavigationMenuIndicator`: A visual indicator (often an arrow) that points to the active
+ *   `NavigationMenuTrigger` when its content is open.
+ * - `NavigationMenuViewport`: A Radix UI utility component that provides a consistent
+ *   positioning and animation context for `NavigationMenuContent` panels.
+ *
+ * Also exported is `navigationMenuTriggerStyle`, a `cva` (class-variance-authority)
+ * object that defines the base styling for navigation menu triggers, allowing for
+ * consistent appearance and easy customization.
+ */
 import * as React from "react"
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"

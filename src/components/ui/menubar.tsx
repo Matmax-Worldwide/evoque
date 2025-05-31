@@ -1,3 +1,34 @@
+/**
+ * @fileoverview This file provides a comprehensive suite of components for creating
+ * horizontal menu bars, often used for application menus (e.g., File, Edit, View).
+ * These components are built on top of the Radix UI Menubar primitives
+ * (`@radix-ui/react-menubar`) and are styled using Tailwind CSS. Icons used within
+ * the components (e.g., for checkmarks, submenu indicators) are sourced from
+ * `lucide-react`.
+ *
+ * The implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code beyond the styling and composition of
+ * Radix UI primitives.
+ *
+ * Exported Components and their general roles:
+ * - `Menubar`: The root container for the entire menu bar.
+ * - `MenubarMenu`: A container for a single top-level menu (e.g., "File" menu) and its items.
+ * - `MenubarTrigger`: The button-like element that opens a `MenubarMenu`.
+ * - `MenubarContent`: The panel that appears when a `MenubarTrigger` is activated, containing menu items.
+ * - `MenubarItem`: A standard clickable item within a menu or submenu.
+ * - `MenubarCheckboxItem`: A menu item that can be checked or unchecked.
+ * - `MenubarRadioGroup`: A group container for `MenubarRadioItem` components.
+ * - `MenubarRadioItem`: A menu item that can be selected from a group, like a radio button.
+ * - `MenubarLabel`: A non-interactive label or heading within a menu.
+ * - `MenubarSeparator`: A visual separator line between groups of items.
+ * - `MenubarShortcut`: A component to display keyboard shortcuts associated with a menu item.
+ * - `MenubarGroup`: A component to group related menu items.
+ * - `MenubarPortal`: A Radix UI utility for rendering menu content in a React portal.
+ * - `MenubarSub`: The root component for a submenu.
+ * - `MenubarSubTrigger`: An item that opens a submenu.
+ * - `MenubarSubContent`: The container for the items within a submenu.
+ */
 "use client"
 
 import * as React from "react"

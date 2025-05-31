@@ -1,3 +1,20 @@
+/**
+ * @fileoverview This file provides a styled Input component for use in forms
+ * and other areas requiring text-like input fields.
+ *
+ * The `Input` component is a `React.forwardRef` wrapper around a standard HTML
+ * `<input>` element. It applies styling using Tailwind CSS, managed via the `cn`
+ * (classnames) utility function.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui. Customizations are primarily focused on applying
+ * consistent styling (e.g., border, padding, focus states, disabled states)
+ * according to a design system. No major project-specific business logic is
+ * visible within this file.
+ *
+ * Exported Component:
+ * - `Input`: The styled input component that accepts standard HTML input attributes.
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
