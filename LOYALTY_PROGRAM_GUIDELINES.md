@@ -1,141 +1,295 @@
-# Guidelines for Creating the `src/app/[locale]/loyaltyprogram` Module
+# Loyalty Program Module Implementation Guidelines
 
-**Goal:** Replicate the structure and patterns of `src/app/[locale]/bookings`.
+## Directory Structure
 
-The new `loyaltyprogram` module should mirror the structure, patterns, and conventions observed in the `src/app/[locale]/bookings` module.
+```
+src/app/[locale]/loyaltyprogram/
+├── layout.tsx
+├── page.tsx
+├── page.test.tsx
+├── overview/
+│   ├── page.tsx
+│   └── page.test.tsx
+├── history/
+│   ├── page.tsx
+│   └── page.test.tsx
+├── rewards/
+│   ├── page.tsx
+│   └── page.test.tsx
+├── tiers/
+│   ├── page.tsx
+│   └── page.test.tsx
+├── campaigns/
+│   ├── page.tsx
+│   └── page.test.tsx
+├── settings/
+│   ├── page.tsx
+│   └── page.test.tsx
+└── analytics/
+    ├── page.tsx
+    └── page.test.tsx
+```
 
----
+## Layout Configuration
 
-**1. Directory & File Structure:**
-    *   **Root:** `src/app/[locale]/loyaltyprogram/`
-    *   **Layout:** `src/app/[locale]/loyaltyprogram/layout.tsx`
-    *   **Main Page:** `src/app/[locale]/loyaltyprogram/page.tsx`
-    *   **Sub-Features (Example: `history`):**
-        *   Directory: `src/app/[locale]/loyaltyprogram/history/`
-        *   Page: `src/app/[locale]/loyaltyprogram/history/page.tsx`
-        *   Test: `src/app/[locale]/loyaltyprogram/history/page.test.tsx`
-    *   *(Repeat sub-feature structure for `rewards`, `tiers`, etc.)*
-    *   **Main Page Test:** `src/app/[locale]/loyaltyprogram/page.test.tsx`
+### LoyaltyProgramLayout (`layout.tsx`)
+- **Client Component**: Mark with `'use client';`
+- **Props Interface**: `LoyaltyProgramLayoutProps` with `children: React.ReactNode` and `params: Promise<{ locale: string }>`
+- **Locale Extraction**: Use `const { locale } = use(params);` (import `use` from `react`)
+- **Context Provider**: Wrap children with `LoyaltyContextProvider` for shared state
+- **Sidebar Integration**: Include `LoyaltyProgramSidebar` component with locale prop
+- **Layout Structure**: Flex container with sidebar and main content area
 
-**2. Layout File (`layout.tsx`):**
-    *   `'use client';`
-    *   Component: `LoyaltyProgramLayout({ children, params })`
-    *   Props: `children: React.ReactNode`, `params: Promise<{ locale: string }>`
-    *   Locale: `const { locale } = use(params);` (import `use` from `react`)
-    *   **Optional Sidebar:**
-        *   Create `LoyaltyProgramSidebar` in `src/components/loyaltyprogram/`.
-        *   Include in layout: `<LoyaltyProgramSidebar locale={locale} />`.
-    *   **Optional Context Providers:** Wrap `{children}` if module-specific contexts are needed (e.g., `LoyaltyContext`).
-    *   **Structure Example:**
-        ```tsx
-        // src/app/[locale]/loyaltyprogram/layout.tsx
-        'use client';
-        import { use } from 'react';
-        // import LoyaltyProgramSidebar from '@/components/loyaltyprogram/LoyaltyProgramSidebar';
-        // import { LoyaltyContextProvider } from '@/contexts/LoyaltyContext';
+## Main Dashboard Page (`page.tsx`)
 
-        interface LoyaltyProgramLayoutProps {
-          children: React.ReactNode;
-          params: Promise<{ locale: string }>;
-        }
+### Structure Requirements
+- **Client Component**: Mark with `'use client';`
+- **Tab Navigation**: Implement using Tabs component with sections:
+  - Overview (default)
+  - Points History
+  - Rewards Catalog
+  - Tier Progress
+  - Active Campaigns
+- **Data Fetching**: Use `graphqlClient` in `useEffect` to fetch:
+  - Current points balance
+  - Tier status
+  - Recent transactions
+  - Available rewards count
+  - Active campaigns
+- **Loading States**: Implement skeleton loaders for each data section
+- **Error Handling**: Display user-friendly error messages with retry options
 
-        export default function LoyaltyProgramLayout({ children, params }: LoyaltyProgramLayoutProps) {
-          const { locale } = use(params);
-          return (
-            // <LoyaltyContextProvider>
-              <div className="flex h-screen bg-gray-50"> {/* Base structure */}
-                {/* <LoyaltyProgramSidebar locale={locale} /> */}
-                <main className="flex-1 overflow-auto">{children}</main>
-              </div>
-            // </LoyaltyContextProvider>
-          );
-        }
-        ```
+### Required Display Components
+- `PointsBalanceCard`: Shows current balance, pending points, tier status
+- `QuickStatsGrid`: Displays key metrics (lifetime points, redemptions, tier progress)
+- `RecentActivityFeed`: Latest 5 transactions with icons
+- `FeaturedRewardsCarousel`: Highlight top rewards
+- `TierProgressBar`: Visual representation of tier advancement
 
-**3. Main Page File (`page.tsx` at module root):**
-    *   `'use client';`
-    *   Serves as a dashboard/overview.
-    *   **UI:** Use `@/components/ui/` (Cards, Tabs, Buttons) & `lucide-react` icons.
-    *   **Tabs:** Strongly recommended for sections (Overview, History, Rewards).
-        *   `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`.
-    *   **Data:** Fetch overview data (`graphqlClient` in `useEffect`), manage loading/error states.
-    *   **Components:** Use/create specialized components in `src/components/loyaltyprogram/` (e.g., `PointsSummaryDisplay`).
-    *   **Conceptual Structure Example:**
-        ```tsx
-        // src/app/[locale]/loyaltyprogram/page.tsx
-        'use client';
-        import React, { useState, useEffect } from 'react';
-        import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-        // ... other necessary imports: Card, Button, icons, graphqlClient, types ...
-        // import PointsSummaryDisplay from '@/components/loyaltyprogram/PointsSummaryDisplay';
+## Sub-Feature Pages
 
-        export default function LoyaltyProgramPage() {
-          const [activeTab, setActiveTab] = useState('overview');
-          // ... states for data, loading, error ...
+### History Page (`history/page.tsx`)
+- **Components Required**:
+  - `PointsHistoryTable`: Sortable, filterable transaction list
+  - `TransactionFilters`: Date range, type, status filters
+  - `ExportButton`: CSV/PDF export functionality
+- **Data Structure**: Paginated transaction history with infinite scroll
+- **Features**: Search by transaction ID, amount range filtering
 
-          useEffect(() => { /* Fetch overview data using graphqlClient */ }, []);
+### Rewards Page (`rewards/page.tsx`)
+- **Components Required**:
+  - `RewardsCatalog`: Grid/list view toggle
+  - `RewardCard`: Individual reward display
+  - `CategoryFilter`: Filter by product/service/discount
+  - `RedemptionModal`: Confirmation flow
+- **Features**: Sort by points required, availability, popularity
+- **Real-time Updates**: WebSocket for inventory changes
 
-          return (
-            <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-              <h1 className="text-3xl font-bold">Loyalty Program</h1>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="history">Points History</TabsTrigger>
-                  <TabsTrigger value="rewards">Rewards Catalog</TabsTrigger>
-                  {/* Other triggers */}
-                </TabsList>
-                <TabsContent value="overview" className="mt-4">
-                  {/* Display overview components, e.g., <PointsSummaryDisplay /> */}
-                </TabsContent>
-                <TabsContent value="history" className="mt-4">
-                  {/* Content for points history */}
-                </TabsContent>
-                <TabsContent value="rewards" className="mt-4">
-                  {/* Content for rewards catalog */}
-                </TabsContent>
-                {/* Other TabsContent sections */}
-              </Tabs>
-            </div>
-          );
-        }
-        ```
+### Tiers Page (`tiers/page.tsx`)
+- **Components Required**:
+  - `TierProgressDisplay`: Current tier with benefits
+  - `TierComparisonTable`: All tiers side-by-side
+  - `BenefitsHighlight`: Animated benefits showcase
+  - `NextTierTeaser`: Points needed for upgrade
+- **Visual Elements**: Progress rings, achievement badges
 
-**4. Sub-Feature Pages (e.g., `history/page.tsx`):**
-    *   `'use client';`
-    *   Focus on one specific loyalty aspect.
-    *   **Data:** Fetch feature-specific data (`graphqlClient` in `useEffect`), manage loading/error.
-    *   **Components:** Use shared UI and create new ones in `src/components/loyaltyprogram/` (e.g., `PointsHistoryTable.tsx`).
+### Campaigns Page (`campaigns/page.tsx`)
+- **Components Required**:
+  - `ActiveCampaignsList`: Current promotions
+  - `CampaignCard`: Individual campaign details
+  - `MultiplierBadge`: Visual earning multipliers
+  - `CountdownTimer`: For limited-time offers
+- **Admin Features**: Campaign creation/editing interface
 
-**5. Component Strategy:**
-    *   **Reuse:** Leverage components from `@/components/ui/` and icons from `lucide-react`.
-    *   **New:** Create loyalty-specific, reusable components in a new directory: `src/components/loyaltyprogram/` (e.g., `PointsBalanceCard.tsx`, `RewardListItem.tsx`, `TierProgressIndicator.tsx`).
-    *   **Imports:** Use clear import paths, e.g., `@/components/loyaltyprogram/YourComponent`.
+### Settings Page (`settings/page.tsx`)
+- **Sections**:
+  - Wallet connection management
+  - Notification preferences
+  - Privacy settings
+  - API key management (for partners)
+- **Components Required**:
+  - `WalletConnector`: Web3 wallet integration
+  - `NotificationToggles`: Email/SMS/push preferences
+  - `APIKeyManager`: Generate/revoke keys
 
-**6. Data Fetching:**
-    *   **Primary Client:** Use the existing `graphqlClient` for all API interactions.
-    *   **Method:** Fetch data primarily within `useEffect` hooks in client components.
-    *   **User Experience:** Implement proper loading states (e.g., display spinners, skeleton loaders) and clear error handling (e.g., display error messages, use `toast` notifications via `sonner` if available).
+### Analytics Page (`analytics/page.tsx`)
+- **Components Required**:
+  - `PointsChart`: Line/bar charts for earning/spending
+  - `EngagementMetrics`: User activity heatmaps
+  - `ROICalculator`: Campaign effectiveness
+  - `PredictiveInsights`: Churn risk indicators
+- **Data Visualization**: Use recharts library
+- **Export Options**: Reports in various formats
 
-**7. State Management:**
-    *   **Local Component State:** Use React hooks (`useState`, `useEffect`, `useMemo`).
-    *   **Shared Module-level State (if needed):** If complex state needs to be shared across multiple loyalty components, consider creating a `LoyaltyContext` (e.g., in `src/contexts/LoyaltyContext.tsx`) and use its provider in `loyaltyprogram/layout.tsx`.
+## Component Library Structure
 
-**8. Styling:**
-    *   **Tailwind CSS:** Use Tailwind CSS utility classes directly in JSX for all styling, maintaining consistency with the rest of the application.
+```
+src/components/loyaltyprogram/
+├── cards/
+│   ├── PointsBalanceCard.tsx
+│   ├── TierStatusCard.tsx
+│   └── QuickActionCard.tsx
+├── tables/
+│   ├── PointsHistoryTable.tsx
+│   ├── RedemptionHistoryTable.tsx
+│   └── TierComparisonTable.tsx
+├── displays/
+│   ├── TierProgressIndicator.tsx
+│   ├── PointsAnimatedCounter.tsx
+│   └── MultiplierBadge.tsx
+├── modals/
+│   ├── RedemptionModal.tsx
+│   ├── TransferPointsModal.tsx
+│   └── WalletConnectionModal.tsx
+├── forms/
+│   ├── CampaignCreationForm.tsx
+│   ├── RewardCreationForm.tsx
+│   └── TierConfigurationForm.tsx
+├── charts/
+│   ├── PointsHistoryChart.tsx
+│   ├── RedemptionAnalyticsChart.tsx
+│   └── TierDistributionChart.tsx
+└── LoyaltyProgramSidebar.tsx
+```
 
-**9. Testing:**
-    *   **Frameworks & Libraries:** Use Jest and `@testing-library/react`.
-    *   **File Location:** Co-locate test files (`*.test.tsx`) with the components or pages they test.
-    *   **Mocking:** Mock child components and external dependencies (like `graphqlClient` or specific data manager components) to ensure tests are focused and not brittle.
-    *   **Assertions:** Test for correct rendering, display of data, and user interactions where applicable.
+## GraphQL Operations Required
 
-**10. TypeScript & Interfaces:**
-    *   **Language:** Use TypeScript for all new code.
-    *   **Type Definitions:** Define TypeScript interfaces for props, state, and data structures related to the loyalty program (e.g., `LoyaltyPoints`, `RewardItem`, `TierInfo`).
-    *   **Location of Types:** These can be placed in a dedicated `types/loyalty.ts` file or co-located within component files if they are very specific and not widely reused.
+### Queries
+- `GET_LOYALTY_PROFILE`: Fetch complete user loyalty data
+- `GET_POINTS_HISTORY`: Paginated transaction history
+- `GET_REWARDS_CATALOG`: Available rewards with filters
+- `GET_TIER_DETAILS`: All tier information
+- `GET_ACTIVE_CAMPAIGNS`: Current promotions
+- `GET_LOYALTY_ANALYTICS`: Dashboard metrics
 
-**11. Navigation:**
-    *   **Next.js Tools:** Use `useRouter()` from `next/navigation` for programmatic navigation and the `<Link>` component from `next/link` for declarative navigation links.
-    *   **Locale Parameter:** Ensure the `locale` dynamic segment is correctly included and passed in all navigation paths and links.
+### Mutations
+- `REDEEM_REWARD`: Process reward redemption
+- `TRANSFER_POINTS`: Point-to-point transfers
+- `CONNECT_WALLET`: Link blockchain wallet
+- `UPDATE_NOTIFICATION_PREFERENCES`: Settings updates
+- `CREATE_CAMPAIGN`: Admin campaign creation
+- `ISSUE_BONUS_POINTS`: Manual point adjustments
+
+### Subscriptions
+- `POINTS_BALANCE_UPDATES`: Real-time balance changes
+- `REWARD_AVAILABILITY`: Inventory updates
+- `CAMPAIGN_STATUS`: Campaign start/end notifications
+
+## TypeScript Interfaces
+
+### Core Types (`types/loyalty.ts`)
+```typescript
+interface LoyaltyProfile {}
+interface PointsTransaction {}
+interface Reward {}
+interface Tier {}
+interface Campaign {}
+interface RedemptionRequest {}
+interface WalletConnection {}
+interface LoyaltyAnalytics {}
+interface EarningRule {}
+interface NotificationPreferences {}
+```
+*(These interfaces will be populated with specific properties as development progresses)*
+
+### Component Props Interfaces
+- Define props for each component with proper typing
+- Use generic types for reusable components
+- Implement strict null checks
+
+## Context Structure
+
+### LoyaltyContext (`contexts/LoyaltyContext.tsx`)
+**State Management (Example)**:
+- `currentPoints: number | null`
+- `activeTier: Tier | null`
+- `pendingTransactions: PointsTransaction[]`
+- `selectedRewards: Reward[]`
+- `notifications: string[]` // Or a more complex Notification object
+- `walletStatus: 'connected' | 'disconnected' | 'connecting'`
+
+**Actions (Example Methods on Context)**:
+- `updateBalance(points: number): void`
+- `processRedemption(rewardId: string): Promise<void>`
+- `refreshProfile(): Promise<void>`
+- `connectWallet(): Promise<void>`
+- `disconnectWallet(): void`
+- `queueNotification(message: string): void`
+
+## Testing Requirements
+
+### Test Coverage Areas
+- Component rendering with various props
+- User interactions (clicks, form submissions)
+- Data fetching and error states (mocking `graphqlClient`)
+- Context state updates and consumers
+- Navigation between sections
+- Responsive design breakpoints (visual testing if possible, otherwise unit tests for responsive props)
+
+### Mock Requirements
+- GraphQL client responses (`graphqlClient` methods)
+- Web3 wallet interactions (ethers.js or web3.js calls)
+- WebSocket connections (if used for real-time updates)
+- External API calls (e.g., notification service)
+
+## Integration Points
+
+### External Services
+- **Blockchain Integration**: Web3 provider (e.g., ethers.js) for wallet connections and contract interactions.
+- **Payment Gateway**: For any hybrid payment processing related to loyalty points.
+- **Analytics Service**: Event tracking for user behavior (e.g., Segment, Mixpanel).
+- **Notification Service**: For Email/SMS/Push delivery (e.g., Twilio, SendGrid).
+- **File Storage**: For export functionality (e.g., AWS S3, Google Cloud Storage).
+
+### Internal Systems
+- **Authentication**: Leverage existing auth context/session management.
+- **User Profile**: Extend or link with current user data model.
+- **Payment History**: Link with existing transactions if applicable.
+- **Customer Support**: Integration with ticketing system (e.g., Zendesk, Intercom).
+
+## Performance Optimizations
+
+### Implementation Guidelines
+- **Code Splitting**: Lazy load sub-features/routes using `next/dynamic`.
+- **Data Caching**: Consider React Query or SWR for client-side data caching, optimistic updates, and background refetching if not using Apollo Client's built-in caching extensively.
+- **Image Optimization**: Use `next/image` component for automatic image optimization.
+- **Bundle Size**: Monitor with `webpack-bundle-analyzer` or similar tools.
+- **Memoization**: Use `React.memo` for expensive components and `useMemo`/`useCallback` for props and functions.
+
+## Accessibility Requirements
+
+### WCAG 2.1 AA Compliance
+- **Keyboard Navigation**: Ensure all interactive elements are keyboard accessible and focusable in a logical order.
+- **Screen Readers**: Provide proper ARIA labels, roles, and attributes for all elements, especially custom components.
+- **Color Contrast**: Ensure text and UI elements meet minimum color contrast ratios.
+- **Focus Management**: Implement clear visual focus indicators for interactive elements.
+- **Error Messages**: Ensure error messages are descriptive, clearly associated with their respective inputs, and announced by screen readers.
+
+## Security Considerations
+
+### Frontend Security
+- **Input Validation**: Implement client-side validation for all user inputs, complementing backend validation.
+- **XSS Prevention**: Sanitize user-generated content displayed in the UI (though React generally mitigates this, be careful with `dangerouslySetInnerHTML`).
+- **CSRF Protection**: Ensure backend uses CSRF tokens if applicable for form submissions/mutations.
+- **Secure Storage**: Avoid storing sensitive information in `localStorage`. Use `httpOnly` cookies for session tokens managed by the backend.
+- **Rate Limiting**: While primarily a backend concern, be mindful of UI patterns that could encourage rapid requests.
+
+## Styling Guidelines
+
+### Tailwind CSS Usage
+- **Consistent Spacing**: Use the standard Tailwind spacing scale for margins, paddings, and gaps.
+- **Color Palette**: Define and use a consistent color palette. Extend the Tailwind theme in `tailwind.config.js` for loyalty brand-specific colors.
+- **Responsive Design**: Employ a mobile-first approach using Tailwind's responsive prefixes (sm, md, lg, xl, 2xl).
+- **Dark Mode**: If dark mode is a requirement, implement it using Tailwind's dark mode variant.
+- **Animation**: Use subtle transitions and animations for interactive elements to enhance UX.
+
+## Deployment Considerations
+
+### Environment Variables
+Ensure the following environment variables (prefixed with `NEXT_PUBLIC_` for client-side access if needed) are configured:
+- `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL`
+- `NEXT_PUBLIC_LOYALTY_CONTRACT_ADDRESS` (if applicable)
+- `NEXT_PUBLIC_WEB3_PROVIDER_URL` (if different from RPC URL)
+- `LOYALTY_API_ENDPOINT` (for GraphQL or other backend services)
+- `WEBSOCKET_URL` (if using WebSockets for real-time updates)
 ```
