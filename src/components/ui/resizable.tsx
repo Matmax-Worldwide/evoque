@@ -1,3 +1,26 @@
+/**
+ * @fileoverview This file provides a set of components for creating resizable
+ * panel layouts. These components allow users to dynamically adjust the size
+ * of different sections within a UI.
+ *
+ * The components (`ResizablePanelGroup`, `ResizablePanel`, `ResizableHandle`)
+ * are built on top of the `react-resizable-panels` library (imported as
+ * `ResizablePrimitive`) and are styled using Tailwind CSS. An optional grip icon
+ * for the handle is provided by `lucide-react` (`GripVertical`).
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with customizations primarily focused on
+ * applying Tailwind CSS classes for styling and integrating the `react-resizable-panels`
+ * library into a composable set of React components.
+ *
+ * Exported Components and their general roles:
+ * - `ResizablePanelGroup`: The root component that groups multiple resizable panels
+ *   and manages their collective layout and resizing behavior.
+ * - `ResizablePanel`: Represents an individual panel within the group that can be resized.
+ * - `ResizableHandle`: The draggable handle component placed between panels,
+ *   used to trigger resizing. It supports an optional `withHandle` prop to display
+ *   a visual grip icon.
+ */
 "use client"
 
 import { GripVertical } from "lucide-react"

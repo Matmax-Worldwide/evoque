@@ -1,3 +1,24 @@
+/**
+ * @fileoverview This file provides components for creating scrollable areas
+ * with custom-styled scrollbars. These components are typically used to make
+ * specific sections of a UI scrollable when their content exceeds the available space.
+ *
+ * The components (`ScrollArea`, `ScrollBar`) are based on the Radix UI ScrollArea
+ * primitives (`@radix-ui/react-scroll-area`) and are styled using Tailwind CSS.
+ * The `ScrollArea` component itself also renders Radix UI's `Viewport` and `Corner`
+ * primitives internally, and `ScrollBar` renders `ScrollAreaThumb`.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code beyond styling and composition of
+ * Radix UI primitives.
+ *
+ * Exported Components and their general roles:
+ * - `ScrollArea`: The main root component that wraps the content to be made scrollable.
+ *   It includes a `Viewport` for the content and automatically renders a `ScrollBar` and `Corner`.
+ * - `ScrollBar`: The component that displays the scrollbar (either vertical or horizontal).
+ *   It contains a `ScrollAreaThumb` for the draggable part of the scrollbar.
+ */
 "use client"
 
 import * as React from "react"

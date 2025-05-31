@@ -1,5 +1,19 @@
+/**
+ * @fileoverview This file defines and exports various constants used by the
+ * RichTextEditor and its associated Toolbar component. These constants include
+ * predefined font sizes, heading types, color palettes, toolbar configurations,
+ * keyboard shortcuts, and default CSS styles for the editor content.
+ * Types like `FontSize`, `HeadingType`, `ColorPalette`, and `ToolbarConfig`
+ * are imported from './types.ts'.
+ */
 import { FontSize, HeadingType, ColorPalette, ToolbarConfig } from './types';
 
+/**
+ * Defines a list of available font sizes for the RichTextEditor.
+ * Each object in the array specifies a `label` for display, a `value` (typically
+ * corresponding to the HTML `<font size="...">` attribute values 1-7, though used
+ * abstractly here), and the actual `pixels` size.
+ */
 export const FONT_SIZES: FontSize[] = [
   { label: '12px', value: '1', pixels: 12 },
   { label: '14px', value: '2', pixels: 14 },
@@ -13,6 +27,11 @@ export const FONT_SIZES: FontSize[] = [
   { label: '48px', value: '10', pixels: 48 },
 ];
 
+/**
+ * Defines a list of available heading types/block formats for the RichTextEditor.
+ * Each object specifies the HTML `tag` (e.g., 'p', 'h1'), a display `label`,
+ * and a `className` (likely Tailwind CSS) for styling the preview or application.
+ */
 export const HEADING_TYPES: HeadingType[] = [
   { tag: 'p', label: 'Párrafo', className: 'text-base' },
   { tag: 'h1', label: 'Título 1', className: 'text-4xl font-bold' },
@@ -23,6 +42,11 @@ export const HEADING_TYPES: HeadingType[] = [
   { tag: 'h6', label: 'Título 6', className: 'text-base font-bold' },
 ];
 
+/**
+ * Defines a list of color palettes available for text color selection in the RichTextEditor.
+ * Each object in the array represents a palette with a `label` (e.g., "Colores básicos")
+ * and an array of `colors` (hex string values).
+ */
 export const COLOR_PALETTES: ColorPalette[] = [
   {
     label: 'Colores básicos',
@@ -41,6 +65,10 @@ export const COLOR_PALETTES: ColorPalette[] = [
   }
 ];
 
+/**
+ * Defines a list of available background colors for text highlighting in the RichTextEditor.
+ * Includes 'transparent' for removing background color.
+ */
 export const BACKGROUND_COLORS: string[] = [
   'transparent',
   '#FFFF00', // Amarillo
@@ -54,6 +82,12 @@ export const BACKGROUND_COLORS: string[] = [
   '#F5F5DC', // Beige
 ];
 
+/**
+ * Defines different configurations for the RichTextEditor's Toolbar.
+ * Each key (e.g., 'full', 'basic', 'minimal') maps to a `ToolbarConfig` object
+ * which specifies which groups of toolbar buttons (formatting, headings, colors, etc.)
+ * should be visible for that configuration.
+ */
 export const TOOLBAR_CONFIGS: Record<string, ToolbarConfig> = {
   full: {
     formatting: true,
@@ -87,6 +121,10 @@ export const TOOLBAR_CONFIGS: Record<string, ToolbarConfig> = {
   },
 };
 
+/**
+ * Defines a mapping of keyboard shortcuts (e.g., "Ctrl+B") to editor commands
+ * (e.g., "bold"). Used by the RichTextEditor to handle common formatting shortcuts.
+ */
 export const KEYBOARD_SHORTCUTS = {
   'Ctrl+B': 'bold',
   'Ctrl+I': 'italic',
@@ -100,6 +138,12 @@ export const KEYBOARD_SHORTCUTS = {
   'Ctrl+J': 'justifyFull',
 } as const;
 
+/**
+ * A string containing default CSS styles to be injected into the document head
+ * for styling the content within the RichTextEditor's contentEditable area.
+ * This ensures basic appearance for elements like headings, paragraphs, lists,
+ * blockquotes, and code blocks, even without external stylesheets targeting them.
+ */
 export const DEFAULT_STYLES = `
   .rich-text-editor-content {
     min-height: 200px;

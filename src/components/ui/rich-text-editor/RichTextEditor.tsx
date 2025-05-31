@@ -1,3 +1,12 @@
+/**
+ * @fileoverview This file defines the RichTextEditor component, a custom client-side
+ * rich text editing solution. It provides a WYSIWYG (What You See Is What You Get)
+ * interface and an optional HTML code view. The editor includes a configurable toolbar
+ * for various text formatting options, handles content sanitization, enforces a
+ * maximum character length, displays word/character counts, and supports keyboard
+ * shortcuts. It is designed to be a comprehensive text input component for applications
+ * requiring rich text capabilities.
+ */
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -8,6 +17,86 @@ import { TOOLBAR_CONFIGS, KEYBOARD_SHORTCUTS, DEFAULT_STYLES } from './constants
 import { EditorUtils } from './utils';
 import { Toolbar } from './Toolbar';
 
+/**
+ * `RichTextEditor` is a feature-rich client-side component for editing HTML content.
+ * It provides a WYSIWYG interface, an optional HTML code view, a configurable toolbar,
+ * content sanitization, character/word counting, maxLength enforcement, and keyboard shortcuts.
+ *
+ * **Props:**
+ * The component accepts props defined in the `RichTextEditorProps` interface (imported from './types').
+ * Key props include `value` (current HTML content), `onChange` (callback for content changes),
+ * `placeholder`, `disabled`, `maxLength`, `showWordCount`, `toolbar` (config name), `height`,
+ * `autoFocus`, `onFocus`, and `onBlur`.
+ *
+ * **State Management:**
+ * - `editorState`: Tracks the current formatting state at the cursor/selection (e.g., bold, italic, font size)
+ *   to update the `Toolbar`'s appearance.
+ * - `showCodeView`: Boolean, toggles between the visual WYSIWYG editor and the HTML code view textarea.
+ * - `codeValue`: String, stores the HTML content when `showCodeView` is true.
+ * - `isFocused`: Boolean, indicates if either the visual editor or code editor currently has focus.
+ * - `wordCount`: Number, displays the current word count of the content.
+ * - `charCount`: Number, displays the current character count of the content.
+ *
+ * **Core Functionality:**
+ * - **Refs**:
+ *   - `editorRef`: Attached to the `contentEditable` div used as the WYSIWYG editing surface.
+ *   - `codeEditorRef`: Attached to the `textarea` used for direct HTML code editing.
+ *   - `updateTimeoutRef`: Stores the `NodeJS.Timeout` ID for debouncing `onChange` calls.
+ *   - `savedSelectionRef`: Stores the browser's selection `Range` object when the editor loses focus,
+ *     allowing selection to be restored before applying toolbar commands.
+ * - **`updateEditorState`**: Called on selection changes or content updates in the visual editor.
+ *   Uses `EditorUtils.getEditorState()` to query the document's command states (e.g., `bold`, `italic`)
+ *   and current block type/font attributes at the selection.
+ * - **`handleContentChange`**: Triggered by the `onInput` event of the visual editor.
+ *   - Debounces the `onChange` prop call to avoid excessive updates.
+ *   - Sanitizes the HTML content using `EditorUtils.sanitizeHTML()`.
+ *   - Calculates word and character counts using `EditorUtils.htmlToText()`, `EditorUtils.countWords()`,
+ *     and `EditorUtils.countCharacters()`.
+ *   - Enforces `maxLength` based on character count of the text content.
+ * - **`handleCommand`**: Called when a button on the `Toolbar` is clicked.
+ *   - Restores saved selection if available.
+ *   - Uses `EditorUtils` to execute browser `document.execCommand` actions (e.g., 'bold', 'italic', 'insertUnorderedList')
+ *     or custom formatting functions like `formatHeading`, `applyFontSize`, etc.
+ *   - Refocuses the editor and updates `editorState` and content after command execution.
+ * - **`handleKeyDown`**: Implements keyboard shortcuts (defined in `KEYBOARD_SHORTCUTS`) by calling `handleCommand`.
+ *   Also enforces `maxLength` during typing by preventing default action if limit is reached (excluding navigation/deletion keys).
+ * - **`handlePaste`**: Intercepts paste events.
+ *   - Sanitizes pasted HTML or converts pasted plain text to HTML.
+ *   - Enforces `maxLength` by truncating pasted content if necessary.
+ *   - Inserts the sanitized (and potentially truncated) content using `EditorUtils.insertHTML()`.
+ * - **`handleFocus`, `handleBlur`**: Manage the `isFocused` state and call `onFocus`/`onBlur` props.
+ *   `handleBlur` saves the current selection using `EditorUtils.saveSelection()`.
+ * - **`toggleCodeView`**: Switches between the visual editor and the HTML code view.
+ *   - When switching to code view, `codeValue` is set from the visual editor's `innerHTML`.
+ *   - When switching to visual view, the `codeValue` (after sanitization) is set as `innerHTML` of the visual editor,
+ *     and the `onChange` prop is called. Focus is managed accordingly.
+ * - **`handleCodeChange`**: Updates `codeValue` and calls `onChange` (debounced) when the HTML code view textarea changes.
+ *
+ * **Initialization & Effects:**
+ * - `useEffect` (on `value`, `showCodeView` change): Initializes the visual editor's content from the `value` prop
+ *   when not in code view, and updates word/character counts.
+ * - `useEffect` (on `autoFocus`, `showCodeView` change): Handles auto-focusing the visual editor.
+ * - `useEffect` (on mount): Injects `DEFAULT_STYLES` (a string of CSS) into a `<style>` tag in the document's head
+ *   to ensure consistent base styling for editor-generated content (e.g., blockquote, lists).
+ *
+ * **UI Structure:**
+ * - The main layout consists of the `Toolbar`, the editor area (which switches between visual and code view),
+ *   and a status bar.
+ * - `AnimatePresence` and `motion.div` from `framer-motion` are used for a fade transition when switching
+ *   between the visual editor and the HTML code view.
+ * - A placeholder text is conditionally rendered in the visual editor if it's empty and not focused.
+ * - The status bar conditionally displays word count, character count, and the `maxLength` limit if configured.
+ * - An "HTML" / "Visual" toggle button is shown if the toolbar configuration includes advanced options.
+ *
+ * **Dependencies:**
+ * - `Toolbar`: A separate component for rendering the editor's toolbar.
+ * - `./constants`: Provides `TOOLBAR_CONFIGS` (defines different toolbar layouts), `KEYBOARD_SHORTCUTS`,
+ *   and `DEFAULT_STYLES` (CSS string for basic content styling).
+ * - `./utils`: Provides `EditorUtils` class with helper methods for commands, sanitization, state getting, etc.
+ *
+ * @param {RichTextEditorProps} props - The props for the RichTextEditor component.
+ * @returns {React.JSX.Element} The rendered Rich Text Editor.
+ */
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
@@ -22,6 +111,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onFocus,
   onBlur
 }) => {
+  /** State tracking current formatting at the cursor/selection for toolbar UI. */
   const [editorState, setEditorState] = useState<EditorState>({
     canUndo: false,
     canRedo: false,
@@ -36,15 +126,24 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     currentTag: 'p',
   });
 
+  /** State to toggle between WYSIWYG and HTML code view. */
   const [showCodeView, setShowCodeView] = useState(false);
+  /** State holding the HTML string when in code view. */
   const [codeValue, setCodeValue] = useState(value);
+  /** State to track if the editor (visual or code) has focus. */
   const [isFocused, setIsFocused] = useState(false);
+  /** State for the current word count of the editor content. */
   const [wordCount, setWordCount] = useState(0);
+  /** State for the current character count of the editor content. */
   const [charCount, setCharCount] = useState(0);
 
+  /** Ref to the contentEditable div for the WYSIWYG editor. */
   const editorRef = useRef<HTMLDivElement>(null);
+  /** Ref to the textarea for the HTML code view editor. */
   const codeEditorRef = useRef<HTMLTextAreaElement>(null);
+  /** Ref to store the timeout ID for debouncing content changes. */
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  /** Ref to store the user's selection range when the editor loses focus. */
   const savedSelectionRef = useRef<Range | null>(null);
 
   // Configuración de la barra de herramientas

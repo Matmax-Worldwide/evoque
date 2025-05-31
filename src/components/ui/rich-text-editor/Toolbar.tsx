@@ -1,3 +1,12 @@
+/**
+ * @fileoverview This file defines the Toolbar component for the RichTextEditor.
+ * It provides a configurable set of UI controls (buttons, dropdowns) for applying
+ * various text formatting commands, managing links, and toggling editor views.
+ * The toolbar's appearance and available options are determined by a `ToolbarConfig` prop.
+ * It interacts with the main RichTextEditor via `editorState` (to reflect current
+ * selection state) and `onCommand` (to execute formatting actions).
+ * Animations are used for dropdowns and pickers via `framer-motion`.
+ */
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -8,33 +17,67 @@ import {
   Code, RotateCcw, ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ToolbarConfig, EditorState, LinkData } from './types';
+import { ToolbarConfig, EditorState, LinkData } from './types'; // Assumed documented in types.ts
 import { FONT_SIZES, HEADING_TYPES, COLOR_PALETTES, BACKGROUND_COLORS } from './constants';
 import { EditorUtils } from './utils';
 
+/**
+ * Props for the main Toolbar component.
+ * `ToolbarConfig` and `EditorState` types are imported from './types'.
+ */
 interface ToolbarProps {
+  /** Configuration object defining which toolbar groups and buttons are visible. */
   config: ToolbarConfig;
+  /** Current state of the editor (e.g., isBold, currentTag) to reflect in toolbar UI. */
   editorState: EditorState;
+  /** Callback function to execute a formatting command in the editor. */
   onCommand: (command: string, value?: string) => void;
+  /** Callback function to trigger an update of the editor state, usually after a command. */
   onStateChange: () => void;
+  /** If true, all toolbar controls are disabled. */
   disabled?: boolean;
+  /** Optional additional CSS classes for the toolbar container. */
   className?: string;
 }
 
+/**
+ * Props for the internal ColorPicker component.
+ */
 interface ColorPickerProps {
+  /** Array of color strings (hex, rgb, etc.) to display as selectable swatches. */
   colors: string[];
+  /** The currently selected color, to highlight it in the picker. */
   selectedColor: string;
+  /** Callback function triggered when a color is selected. */
   onColorSelect: (color: string) => void;
+  /** Title displayed above the color swatches (e.g., "Color de texto"). */
   title: string;
 }
 
+/**
+ * Props for the internal LinkModal component.
+ * `LinkData` type is imported from './types'.
+ */
 interface LinkModalProps {
+  /** If true, the modal is visible. */
   isOpen: boolean;
+  /** Callback function to close the modal. */
   onClose: () => void;
+  /** Callback function when the link form is submitted. */
   onSubmit: (linkData: LinkData) => void;
+  /** Optional initial data to pre-fill the link form (e.g., when editing an existing link). */
   initialData?: Partial<LinkData>;
 }
 
+/**
+ * `ColorPicker` is an internal component used within the `Toolbar` to display a grid
+ * of selectable color swatches for text or background color.
+ * It uses `framer-motion` for a simple appearance animation.
+ *
+ * @param {ColorPickerProps} props - The props for the ColorPicker.
+ * @returns {React.JSX.Element} A dropdown-like panel with color swatches.
+ * @internal
+ */
 const ColorPicker: React.FC<ColorPickerProps> = ({ colors, selectedColor, onColorSelect, title }) => {
   return (
     <motion.div
@@ -68,6 +111,16 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ colors, selectedColor, onColo
   );
 };
 
+/**
+ * `LinkModal` is an internal component used by the `Toolbar` to provide a form
+ * for inserting or editing hyperlinks. It appears as a modal dialog.
+ * It manages its own form state for URL, link text, and target (`_blank` or `_self`).
+ * Uses `framer-motion` for appearance animation.
+ *
+ * @param {LinkModalProps} props - The props for the LinkModal.
+ * @returns {React.JSX.Element | null} The rendered modal form, or null if `isOpen` is false.
+ * @internal
+ */
 const LinkModal: React.FC<LinkModalProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
   const [linkData, setLinkData] = useState<LinkData>({
     url: initialData?.url || '',
@@ -167,6 +220,21 @@ const ToolbarButton: React.FC<{
   children: React.ReactNode;
   className?: string;
 }> = ({ onClick, active, disabled, title, children, className }) => (
+  /**
+   * `ToolbarButton` is a generic internal button component used within the `Toolbar`.
+   * It standardizes the appearance and behavior of toolbar buttons, including active states
+   * and disabled states.
+   *
+   * @param {object} props - Component props.
+   * @param {() => void} props.onClick - Callback for when the button is clicked.
+   * @param {boolean} [props.active] - If true, applies active styling.
+   * @param {boolean} [props.disabled] - If true, applies disabled styling and behavior.
+   * @param {string} props.title - Tooltip text for the button.
+   * @param {React.ReactNode} props.children - Typically the icon for the button.
+   * @param {string} [props.className] - Optional additional CSS classes.
+   * @returns {React.JSX.Element} A styled button element.
+   * @internal
+   */
   <button
     onClick={onClick}
     disabled={disabled}
@@ -187,6 +255,20 @@ const ToolbarDropdown: React.FC<{
   title: string;
   disabled?: boolean;
 }> = ({ trigger, children, title, disabled }) => {
+  /**
+   * `ToolbarDropdown` is an internal component that creates a dropdown menu within the `Toolbar`.
+   * It takes a `trigger` element (e.g., text with an icon) and `children` (the dropdown content).
+   * Manages its open/closed state and closes when a click occurs outside of it.
+   * Uses `framer-motion` for appearance animation of the dropdown panel.
+   *
+   * @param {object} props - Component props.
+   * @param {React.ReactNode} props.trigger - The element that toggles the dropdown.
+   * @param {React.ReactNode} props.children - The content to display within the dropdown panel.
+   * @param {string} props.title - Tooltip text for the dropdown trigger button.
+   * @param {boolean} [props.disabled] - If true, the dropdown trigger is disabled.
+   * @returns {React.JSX.Element} A dropdown component with a trigger and animated panel.
+   * @internal
+   */
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -240,10 +322,52 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   disabled = false,
   className
 }) => {
+  /**
+ * `Toolbar` is the main component that renders the rich text editor's toolbar.
+ * It dynamically generates groups of formatting controls (buttons and dropdowns)
+ * based on the `config` prop. The active state of these controls is determined
+ * by the `editorState` prop. When a control is interacted with, it calls the
+ * `onCommand` prop to execute the corresponding formatting action in the parent
+ * `RichTextEditor`, and then `onStateChange` to refresh the editor state.
+ *
+ * **Functionality:**
+ * - **Dynamic Control Rendering**: Iterates through the `config` object (e.g., `config.headings`,
+ *   `config.formatting`, `config.colors`) to conditionally render groups of toolbar elements.
+ *   Uses internal components like `ToolbarButton` and `ToolbarDropdown`.
+ * - **State Reflection**: Uses the `editorState` prop (e.g., `editorState.isBold`, `editorState.currentTag`)
+ *   to visually indicate the active formatting state of the current selection (e.g., highlighting
+ *   the "Bold" button if the selected text is bold).
+ * - **Command Execution**: When a button or dropdown item is clicked, it calls the `handleCommand`
+ *   internal function, which in turn calls the `onCommand` and `onStateChange` props passed
+ *   from the `RichTextEditor`. This decouples the toolbar from direct editor manipulation.
+ * - **Special Controls**:
+ *   - **Color Pickers**: Manages visibility of `ColorPicker` components for text and background
+ *     colors via `showTextColorPicker` and `showBgColorPicker` states.
+ *   - **Link Modal**: Manages visibility of the `LinkModal` for inserting/editing hyperlinks
+ *     via the `showLinkModal` state. The `handleLinkSubmit` function processes data from the modal.
+ *   - **Code View Toggle**: A button to toggle the HTML code view is rendered if `config.advanced` is true.
+ *     Its active state is managed by the local `showCodeView` state, which should ideally be
+ *     synchronized with the parent `RichTextEditor`'s code view state (though direct management
+ *     of parent's `showCodeView` isn't done here; it relies on `onCommand('toggleCodeView')`).
+ * - **Dependencies**: Uses `HEADING_TYPES`, `FONT_SIZES`, `COLOR_PALETTES`, `BACKGROUND_COLORS`
+ *   from `./constants` to populate dropdowns and color pickers. Icons are from `lucide-react`.
+ *   Animations for dropdowns and pickers use `framer-motion`.
+ *
+ * @param {ToolbarProps} props - Props for the Toolbar component.
+ * @returns {React.JSX.Element} The rendered toolbar UI.
+ */
+  /** State to control visibility of the text color picker dropdown. */
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  /** State to control visibility of the background color picker dropdown. */
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  /** State to control visibility of the link insertion modal. */
   const [showLinkModal, setShowLinkModal] = useState(false);
-  const [showCodeView, setShowCodeView] = useState(false);
+  /**
+   * State to reflect if the editor is in code view. This is primarily used to set the
+   * active state of the "View Code" toggle button. The actual toggling logic
+   * is handled by the parent `RichTextEditor` via the `onCommand` prop.
+   */
+  const [showCodeView, setShowCodeView] = useState(false); // This seems to be for button state, actual toggle via onCommand
 
   const textColorRef = useRef<HTMLDivElement>(null);
   const bgColorRef = useRef<HTMLDivElement>(null);

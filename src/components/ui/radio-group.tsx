@@ -1,3 +1,22 @@
+/**
+ * @fileoverview This file provides components for creating radio button groups,
+ * allowing users to select one option from a set.
+ *
+ * The components (`RadioGroup`, `RadioGroupItem`) are based on the Radix UI
+ * RadioGroup primitives (`@radix-ui/react-radio-group`) and are styled using
+ * Tailwind CSS. The selection indicator icon (a circle) is provided by
+ * `lucide-react`.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code beyond styling.
+ *
+ * Exported Components and their general roles:
+ * - `RadioGroup`: The root component that groups multiple `RadioGroupItem` elements
+ *   and manages the selection state.
+ * - `RadioGroupItem`: Represents an individual radio button within the group. It includes
+ *   a visual indicator (a filled circle) when selected.
+ */
 "use client"
 
 import * as React from "react"
