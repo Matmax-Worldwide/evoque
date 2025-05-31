@@ -1,50 +1,76 @@
-# GraphQL type for Playlists
+# src/app/[locale]/signage/backend/graphql/schemas/playlist.schema.graphql
+scalar DateTime # Ensure DateTime is available or defined globally
+
 type Playlist {
   id: ID!
   name: String!
   description: String
   organizationId: ID!
   createdByUserId: ID!
-  createdAt: String! # ISO Date string
-  updatedAt: String! # ISO Date string
-  items: [PlaylistItem!]! # Ordered list of items
+  createdAt: DateTime! # Changed to DateTime
+  updatedAt: DateTime! # Changed to DateTime
+  version: Int! # <<<< ADD THIS FIELD
+  contentUpdatedAt: DateTime # <<<< ADD THIS FIELD (Timestamp for when items/structure last changed)
+  items: [PlaylistItem!]!
 }
 
-# GraphQL type for items within a Playlist
 type PlaylistItem {
   id: ID!
-  media: Media! # The actual Media object, resolved
+  media: Media!
   order: Int!
   durationSeconds: Int!
-  # settings: JSON # Future: for item-specific overrides
-  createdAt: String! # ISO Date string
+  # settings: JSON
+  createdAt: DateTime! # Changed to DateTime
+}
+
+# --- Content Manifest Types ---
+type ManifestMediaItem {
+  id: ID!
+  url: String!
+  mimeType: String
+  sizeBytes: Int
+  contentHash: String # Crucial for cache validation
+  updatedAt: DateTime! # Media file's own last update time
+  name: String # For debugging or pre-display
+  type: String # Media type string
+}
+
+type PlaylistContentManifest {
+  playlistId: ID!
+  playlistName: String!
+  version: Int!
+  contentUpdatedAt: DateTime
+  mediaItems: [ManifestMediaItem!]!
 }
 
 input CreatePlaylistInput {
   organizationId: ID!
-  createdByUserId: ID! # From context ideally
+  createdByUserId: ID!
   name: String!
   description: String
 }
 
 input AddMediaToPlaylistInput {
-  organizationId: ID! # For validation/scoping
+  organizationId: ID!
   playlistId: ID!
   mediaId: ID!
-  order: Int # If not provided, item is added to the end.
+  order: Int
   durationSeconds: Int!
 }
 
-# Extend Mutation and Query types
+# This type definition will be merged with other Mutation types
 type Mutation {
   createPlaylist(input: CreatePlaylistInput!): Playlist!
-  addMediaToPlaylist(input: AddMediaToPlaylistInput!): Playlist! # Returns the updated playlist
-  # Future: updatePlaylistItem, removePlaylistItem, reorderPlaylistItems
+  addMediaToPlaylist(input: AddMediaToPlaylistInput!): Playlist!
+  # updatePlaylist(id: ID!, input: UpdatePlaylistInput): Playlist # Conceptual
+  # deletePlaylist(id: ID!): Playlist # Conceptual
 }
 
+# This type definition will be merged with other Query types
 type Query {
   getPlaylist(id: ID!, organizationId: ID!): Playlist
   listPlaylists(organizationId: ID!): [Playlist!]!
   getPlaylistForDevice(deviceId: ID!): Playlist
-  # Auth context should provide organizationId for device for security
+
+  getPlaylistContentManifest(playlistId: ID!, organizationId: ID!): PlaylistContentManifest
 }

@@ -85,6 +85,7 @@ model Media {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  contentHash String? // <<<< ADD THIS LINE
 
   playlistItems PlaylistItem[] // Media can be in many playlist items
 
@@ -114,6 +115,9 @@ model Playlist {
 
   assignedDevices Device[] @relation("DeviceToPlaylist") // Devices this playlist is assigned to
   scheduledEvents ScheduledEvent[] // Playlists can be scheduled multiple times
+
+  version Int @default(1)
+  contentUpdatedAt DateTime? // Manually managed by resolvers on item changes
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -215,7 +219,9 @@ model ScheduledEvent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  exceptions RecurrenceException[] // Dates/times when a recurring event instance should be skipped or modified
+  // exceptions RecurrenceException[] // This relation is on the RecurrenceException side, not directly here.
+  // The back-relation in Playlist for RecurrenceException (if one were needed) would be:
+  // overriddenInExceptions RecurrenceException[] @relation("ExceptionToPlaylist")
 
   @@index([playlistId])
   @@index([organizationId])

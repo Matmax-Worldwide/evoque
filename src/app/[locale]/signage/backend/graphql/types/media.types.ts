@@ -1,31 +1,32 @@
-// Corresponds to backend/models/media.model.ts for GraphQL exposure
+// src/app/[locale]/signage/backend/graphql/types/media.types.ts
+
 export interface GraphQLMedia {
   id: string;
   name: string;
-  type: 'VIDEO' | 'IMAGE' | 'AUDIO' | 'URL' | 'WIDGET';
+  type: 'VIDEO' | 'IMAGE' | 'AUDIO' | 'URL' | 'WIDGET' | string; // Allow string for flexibility if enum not strictly enforced
   mimeType?: string | null;
-  url: string; // CDN or storage URL
+  url: string;
   thumbnailUrl?: string | null;
   sizeBytes?: number | null;
   durationSeconds?: number | null;
   width?: number | null;
   height?: number | null;
   organizationId: string;
-  uploadedByUserId: string; // ID of the user who uploaded
+  uploadedByUserId: string;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
+  contentHash?: string | null; // <<<< ADD THIS FIELD
 }
 
 export interface UploadMediaInput {
   organizationId: string;
   uploadedByUserId: string;
-  name: string; // Typically the filename
-  type: 'VIDEO' | 'IMAGE' | 'AUDIO' | 'URL' | 'WIDGET';
+  name: string;
+  type: 'VIDEO' | 'IMAGE' | 'AUDIO' | 'URL' | 'WIDGET' | string;
   mimeType?: string;
   sizeBytes?: number;
-  durationSeconds?: number; // Optional, can be extracted later
-  width?: number; // Optional
-  height?: number; // Optional
-  // In a real scenario, this would also take a File object or stream
-  // For now, URL will be simulated.
+  durationSeconds?: number;
+  width?: number;
+  height?: number;
+  contentHash?: string | null; // Client might not provide this; backend would generate post-upload.
 }

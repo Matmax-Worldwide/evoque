@@ -1,100 +1,87 @@
-# GraphQL Server Setup for Signage Module (Core Features)
+# GraphQL Server Setup for Signage Module
 
-This guide explains how to integrate the GraphQL schemas and resolvers for the **core features (Devices, Media, Playlists)** of the Signage Module into your main GraphQL server.
+This guide explains how to integrate the GraphQL schemas and resolvers for the Signage Module into your main GraphQL server.
 
-The scheduling-related GraphQL definitions (`schedule.schema.graphql`, `schedule.types.ts`, `schedule.resolvers.ts`) are part of a later phase. While the `schedule.resolvers.ts` file is already included in the root resolver merge in `resolvers/index.ts`, and `schedule.schema.graphql` in `schemas/index.graphql`, you can choose to exclude them from your GraphQL server build process if you are phasing the integration.
+**Integration Phasing:**
+*   **Core Features (Recommended First Pass):** Devices, Media, Playlists. The resolvers for these (`device.resolvers.ts`, `media.resolvers.ts`, `playlist.resolvers.ts`) have been refactored to use a standard Prisma Client (e.g., imported from `@/lib/prisma` or via context).
+*   **Scheduling Features:** The `schedule.schema.graphql` defines scheduling operations, and `schedule.resolvers.ts` provides a **detailed mock implementation** of these resolvers (it does not use the live Prisma client yet, but simulates it with in-memory data).
+
+You can choose to integrate only the core features first, or include the scheduling features with their current mock resolver behavior for early UI testing.
 
 ## 1. GraphQL Schema Definitions (Type Definitions)
 
-The Signage Module's GraphQL type definitions for core features are located in:
-*   `src/app/[locale]/signage/backend/graphql/schemas/device.schema.graphql`
-*   `src/app/[locale]/signage/backend/graphql/schemas/media.schema.graphql`
-*   `src/app/[locale]/signage/backend/graphql/schemas/playlist.schema.graphql`
-
-(And `schedule.schema.graphql` for the scheduling features, which you may integrate now or later.)
+The Signage Module's GraphQL type definitions are located in:
+*   `src/app/[locale]/signage/backend/graphql/schemas/device.schema.graphql` (Core)
+*   `src/app/[locale]/signage/backend/graphql/schemas/media.schema.graphql` (Core)
+*   `src/app/[locale]/signage/backend/graphql/schemas/playlist.schema.graphql` (Core)
+*   `src/app/[locale]/signage/backend/graphql/schemas/schedule.schema.graphql` (Scheduling - mock resolvers)
 
 **Integration Steps:**
 
-1.  **Schema Merging Strategy:** Your GraphQL server setup (e.g., Apollo Server, GraphQL Yoga) will have a method for loading and merging GraphQL type definitions. Common approaches include:
+1.  **Schema Merging Strategy:** Your GraphQL server setup (e.g., Apollo Server, GraphQL Yoga) will have a method for loading and merging GraphQL type definitions.
     *   **Using `@graphql-tools/load-files` and `@graphql-tools/merge`:**
-        If you use these tools, ensure the path `src/app/[locale]/signage/backend/graphql/schemas/` (or specifically the `device`, `media`, `playlist`, and optionally `schedule` files) is included in the patterns that `loadFilesSync` processes. The `mergeTypeDefs` function can then combine these with your existing schemas.
+        Include the path `src/app/[locale]/signage/backend/graphql/schemas/` in the patterns `loadFilesSync` processes. If you're phasing, you might specifically list only the core files first.
         ```typescript
         // Example conceptual server setup snippet
         // import { loadFilesSync } from '@graphql-tools/load-files';
         // import { mergeTypeDefs } from '@graphql-tools/merge';
-        // const signageSchemasPath = 'src/app/[locale]/signage/backend/graphql/schemas/**/*.graphql'; // Adapt as needed
+        // const signageCoreSchemasPath = [
+        //   'src/app/[locale]/signage/backend/graphql/schemas/device.schema.graphql',
+        //   'src/app/[locale]/signage/backend/graphql/schemas/media.schema.graphql',
+        //   'src/app/[locale]/signage/backend/graphql/schemas/playlist.schema.graphql',
+        //   // Optionally add '.../schedule.schema.graphql' if integrating its schema now
+        // ];
         // const globalSchemasPath = 'src/path/to/your/global/schemas/**/*.graphql';
-        // const typesArray = loadFilesSync([globalSchemasPath, signageSchemasPath]);
+        // const typesArray = loadFilesSync([globalSchemasPath, ...signageCoreSchemasPath]);
         // const typeDefs = mergeTypeDefs(typesArray);
         ```
-    *   **Manual Import/Stitching:** If you manually construct your schema, you'll need to import the string contents of these `.graphql` files and concatenate or stitch them appropriately.
 2.  **Root `Query` and `Mutation` Types:**
-    *   The file `src/app/[locale]/signage/backend/graphql/schemas/index.graphql` provides a **conceptual merged view** of the `Query` and `Mutation` types, including operations from all Signage module's schema files.
-    *   Ensure that your final, merged schema correctly extends the root `Query` and `Mutation` types with the operations defined in the Signage module's schema files. If your schema loading tool doesn't automatically extend root types from multiple files, you might need to define root `Query` and `Mutation` types that explicitly include all fields, or use schema stitching techniques. The `index.graphql` file is structured to facilitate this.
+    *   The file `src/app/[locale]/signage/backend/graphql/schemas/index.graphql` provides a merged view of all `Query` and `Mutation` types from the Signage module.
+    *   Ensure your final schema correctly extends your root `Query` and `Mutation` types with the operations from the Signage module's schema files you choose to include.
 3.  **Scalars and Enums:**
-    *   Ensure any custom scalars used (like `DateTime` or `Json`) are defined in your GraphQL server setup.
-    *   Enums like `DeviceStatus`, `MediaType`, and `TargetType` are defined within their respective `.schema.graphql` files and should be automatically picked up by most schema merging tools.
+    *   Ensure custom scalars (`DateTime`, `Json`) are defined.
+    *   Enums (`DeviceStatus`, `MediaType`, `TargetType`) are defined in their respective schema files.
 
 ## 2. GraphQL Resolvers
 
 The Signage Module's resolvers are:
-*   `src/app/[locale]/signage/backend/graphql/resolvers/device.resolvers.ts`
-*   `src/app/[locale]/signage/backend/graphql/resolvers/media.resolvers.ts`
-*   `src/app/[locale]/signage/backend/graphql/resolvers/playlist.resolvers.ts`
-*   `src/app/[locale]/signage/backend/graphql/resolvers/schedule.resolvers.ts` (Contains conceptual Prisma logic for scheduling features)
+*   `device.resolvers.ts` (Core - uses live Prisma client)
+*   `media.resolvers.ts` (Core - uses live Prisma client)
+*   `playlist.resolvers.ts` (Core - uses live Prisma client)
+*   `schedule.resolvers.ts` (**Uses its own internal mock data structures, not the live Prisma client yet**)
 
-The file `src/app/[locale]/signage/backend/graphql/resolvers/index.ts` exports a `getRootResolver()` function that deep-merges these individual resolver objects.
+The file `src/app/[locale]/signage/backend/graphql/resolvers/index.ts` exports `getRootResolver()` which deep-merges all these.
 
 **Integration Steps:**
 
-1.  **Import Root Signage Resolver:** Import the `getRootResolver` function (or the resolver object it returns) into your main GraphQL server setup file where you define your global resolvers map.
+1.  **Import Root Signage Resolver:**
     ```typescript
-    // Example conceptual server setup snippet
+    // Example:
     // import { getRootResolver as getSignageRootResolver } from '@/app/[locale]/signage/backend/graphql/resolvers'; // Adjust path
-    // import { someOtherGlobalResolvers } from '@/path/to/your/global/resolvers';
-    // import { merge } from 'lodash'; // Or your preferred deep merge utility
-
     // const signageResolvers = getSignageRootResolver();
+    ```
+2.  **Merge with Global Resolvers:** Deep-merge `signageResolvers` with your existing global resolver map.
+    ```typescript
     // const resolvers = merge({}, someOtherGlobalResolvers, signageResolvers);
     ```
-2.  **Merge with Global Resolvers:** Deep-merge the Signage module's resolver map with your existing global resolver map. Ensure that `Query`, `Mutation`, and any type-specific resolvers (like `Device`, `Playlist`, `ScheduledEvent`, etc.) are correctly combined. `lodash.merge` typically handles this well.
-3.  **Prisma Client in Context (Recommended):** The Signage resolvers (for Device, Media, Playlist, and conceptually for Schedule) are designed to use a Prisma Client instance. The recommended way is to add this instance to your GraphQL server's context.
+    **Note:** Even if you exclude `schedule.schema.graphql` from your schema build initially, `schedule.resolvers.ts` is still part of the merged `signageResolvers`. This is generally fine; GraphQL will simply ignore resolvers for types or fields not present in the schema.
+3.  **Prisma Client in Context (Recommended):**
+    The core resolvers (`device`, `media`, `playlist`) expect the Prisma Client instance via context or a direct import (`@/lib/prisma`). The `schedule.resolvers.ts` currently uses its own internal mock data, but is structured to accept a Prisma client from context in the future.
     ```typescript
     // Example: Adding Prisma to Apollo Server context
-    // import prisma from '@/lib/prisma'; // Your shared Prisma instance (see PRISMA_INTEGRATION.md)
-    // const server = new ApolloServer({
-    //   typeDefs, // Your merged type definitions
-    //   resolvers, // Your merged resolvers
-    //   context: async ({ req }) => {
-    //     // ... your existing context setup (e.g., for auth)
-    //     return {
-    //       // ... existing context properties
-    //       prisma, // Add Prisma client to context
-    //       user: req.user // Example: if user is attached by auth middleware
-    //     };
-    //   },
-    // });
+    // import prisma from '@/lib/prisma';
+    // context: async ({ req }) => ({ /* ... */ prisma, user: req.user });
     ```
-    The Signage resolvers attempt to use `context.prisma` first, then fall back to a direct import of `prisma` (e.g., `import prisma from '@/lib/prisma';`). Using the context is generally preferred for better testability and request-level scoping if needed.
 
 ## 3. TypeScript Types
 
-The directory `src/app/[locale]/signage/backend/graphql/types/` contains TypeScript definitions that correspond to the GraphQL schema types. These are primarily for:
-*   Type-checking in your resolver implementations (though Prisma types are often used directly within resolvers).
-*   Potentially for generating client-side types if you are not using a tool like GraphQL Code Generator.
-
-If you use GraphQL Code Generator, it will generate types based on your final merged schema, which would be the preferred source for client-side types.
+The `src/app/[locale]/signage/backend/graphql/types/` directory contains TypeScript definitions corresponding to the GraphQL types. These were primarily for guiding development and for the mock client setups. If you use GraphQL Code Generator against your final merged schema, its output will be the source of truth for client-side and potentially server-side (resolver signature) types.
 
 ## 4. Updating Client-Side GraphQL Client
 
-After your GraphQL server's schema has been updated to include the Signage module's types, queries, and mutations:
+After updating your GraphQL server schema:
+1.  **GraphQL Code Generator:** Re-run your codegen script. This will generate new TypeScript types for queries, mutations, and client helpers based on the included Signage operations.
+2.  **Manual Client Updates:** Write new GQL query/mutation strings for Signage operations and update client helper functions.
+3.  **UI Integration:** The Signage UI pages are prepared to use a global `graphqlClient`. Update this client to use the newly generated operations.
 
-1.  **GraphQL Code Generator:** If you use GraphQL Code Generator:
-    *   Ensure your codegen configuration points to your updated GraphQL server endpoint or schema file.
-    *   Re-run your codegen script (e.g., `npm run codegen`). This will generate new TypeScript types for your queries, mutations, and potentially updated client instance or hooks.
-2.  **Manual Client Updates:** If you manage client-side queries/mutations manually:
-    *   Write new GQL query/mutation strings for Signage operations.
-    *   Update your client helper functions (e.g., in `@/lib/graphql-client`) to execute these.
-3.  **UI Integration:** The Signage UI pages and components are set up to use a conceptual `graphqlClient`. Once your actual client is updated with Signage operations, these UI parts can be transitioned from mock clients to the live API.
-
-By following these steps, your GraphQL server and client-side setup should be correctly configured to support the Signage Module.
+By following these steps, your GraphQL server and client-side setup can be configured to support the Signage Module, starting with the core features and optionally including the mock-resolver-backed scheduling features for early UI testing.

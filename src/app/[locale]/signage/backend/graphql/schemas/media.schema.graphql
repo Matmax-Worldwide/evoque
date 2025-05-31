@@ -1,3 +1,7 @@
+# src/app/[locale]/signage/backend/graphql/schemas/media.schema.graphql
+
+scalar DateTime # Assuming a DateTime scalar is defined globally
+
 # GraphQL type for Media objects
 type Media {
   id: ID!
@@ -12,32 +16,31 @@ type Media {
   height: Int
   organizationId: ID!
   uploadedByUserId: ID!
-  createdAt: String! # ISO Date string
-  updatedAt: String! # ISO Date string
+  createdAt: DateTime! # Changed from String to DateTime
+  updatedAt: DateTime! # Changed from String to DateTime
+  contentHash: String # <<<< ADD THIS FIELD (e.g., MD5 or SHA256)
 }
 
 input UploadMediaInput {
   organizationId: ID!
-  uploadedByUserId: ID! # Should come from context in a real app
+  uploadedByUserId: ID!
   name: String!
-  type: String! # VIDEO, IMAGE, AUDIO, URL, WIDGET
+  type: String!
   mimeType: String
   sizeBytes: Int
   durationSeconds: Int
   width: Int
   height: Int
-  # Actual file upload would be handled via a multipart request
-  # or a pre-signed URL upload flow. This input is for metadata.
+  contentHash: String # Optional: client might provide it, or backend generates post-upload
 }
 
-# Extend Mutation type if it's already defined elsewhere,
-# or define it if this is the first schema with mutations.
-# For now, assuming it might be merged.
+# This type definition will be merged with other Mutation types
 type Mutation {
-  # Simulates uploading a media file and creating its metadata record
   uploadMedia(input: UploadMediaInput!): Media!
+  # updateMedia(id: ID!, input: UpdateMediaInput): Media # Conceptual
 }
 
+# This type definition will be merged with other Query types
 type Query {
   getMedia(id: ID!, organizationId: ID!): Media
   listMedia(organizationId: ID!): [Media!]!

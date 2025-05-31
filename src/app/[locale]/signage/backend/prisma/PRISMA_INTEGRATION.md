@@ -1,6 +1,6 @@
 # Prisma Integration Guide for the Signage Module (Core Features)
 
-This document provides guidance on integrating the Prisma schema and refactored resolvers for the **core features (Devices, Media, Playlists)** of the Signage Module into your existing CMS backend that uses Prisma and PostgreSQL.
+This document provides guidance on integrating the Prisma schema and refactored resolvers for the **core features (Devices, Media, Playlists)** of the Signage Module into your existing CMS backend that uses Prisma and PostgreSQL. This includes fields recently added for offline player support like `contentHash` on `Media` and `version` / `contentUpdatedAt` on `Playlist`.
 
 Scheduling-related models (`ScheduledEvent`, `RecurrenceException`, and `TargetType` enum) also exist in the `src/app/[locale]/signage/backend/prisma/schema.prisma` file. While they are designed to be compatible, their full resolver implementation and deeper integration are part of a later phase. For this initial core feature integration, you can choose to:
 1.  Include these scheduling models during the migration if you want the tables created. They should not conflict with existing schemas if your CMS doesn't use these exact model names.
@@ -12,9 +12,9 @@ The primary Prisma models for this integration phase are defined in `src/app/[lo
 
 *   **`Device`**: Manages signage devices, pairing codes, status, and the currently assigned playlist.
     *   Uses the `DeviceStatus` enum.
-*   **`Media`**: Stores metadata for uploaded media files (videos, images, etc.).
+*   **`Media`**: Stores metadata for uploaded media files (videos, images, etc.), including `contentHash`.
     *   Uses the `MediaType` enum.
-*   **`Playlist`**: Defines playlists composed of ordered media items.
+*   **`Playlist`**: Defines playlists composed of ordered media items, including `version` and `contentUpdatedAt` for tracking content changes.
 *   **`PlaylistItem`**: The junction table linking `Playlist` and `Media`, defining the order and duration of media within a playlist.
 
 **Review `schema.prisma` (Core Models):**
@@ -22,6 +22,7 @@ Before proceeding, carefully review these four core models and their two enums i
 *   **Relations:** Ensure foreign keys and `@relation` attributes correctly link these models (e.g., `Device.currentPlaylistId` to `Playlist.id`, `PlaylistItem.playlistId` to `Playlist.id`, `PlaylistItem.mediaId` to `Media.id`).
 *   **Cascading Deletes & SetNull:** Note the `onDelete: Cascade` rules on `PlaylistItem` for its relations to `Playlist` and `Media`. This means if a Playlist or Media record is deleted, its associated PlaylistItem records will also be deleted. `Device.currentPlaylistId` uses `onDelete: SetNull`, meaning if a Playlist is deleted, the device's link to it is nullified. Review if these align with your desired data integrity rules.
 *   **Indexing:** Key fields are indexed (e.g., `organizationId`, `status` on `Device`; `playlistId`, `mediaId` on `PlaylistItem`).
+*   **New Fields**: Note the `contentHash` on `Media`, and `version` and `contentUpdatedAt` on `Playlist`.
 
 ## 2. Integrating into Your Main `schema.prisma`
 
@@ -47,9 +48,9 @@ Once the Signage core models (and optionally scheduling models) are integrated i
 
 1.  **Generate Migration Files:** Create SQL migration files. Use a descriptive name.
     ```bash
-    npx prisma migrate dev --name add_signage_module_core_features
+    npx prisma migrate dev --name add_signage_core_with_offline_fields
     ```
-    (Or `yarn prisma migrate dev --name add_signage_module_core_features`)
+    (Or `yarn prisma migrate dev --name add_signage_core_with_offline_fields`)
 2.  **Review Migration:** **Crucially, inspect the generated SQL migration file.** Ensure it accurately reflects the intended schema changes and will not cause unintended data loss or conflicts with existing tables.
 3.  **Apply Migration:** The `migrate dev` command usually applies the migration automatically in development. For staging/production environments, use `prisma migrate deploy` after thorough testing.
 
