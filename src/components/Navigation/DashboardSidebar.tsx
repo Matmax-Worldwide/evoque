@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This file defines the DashboardSidebar component, a comprehensive
+ * client-side navigation sidebar for the main user dashboard. It dynamically displays
+ * navigation items, user profile information, notification counts, and external links
+ * based on user roles, permissions, and an admin role-simulation feature.
+ * The sidebar is responsive, offering different UIs for desktop and mobile views.
+ * It uses Apollo Client for GraphQL data fetching and internationalization for text.
+ */
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -35,6 +43,8 @@ import { useI18n } from '@/hooks/useI18n';
 import React from 'react';
 
 // GraphQL queries y mutations
+
+/** GraphQL query to fetch the current user's profile information, including their role. */
 const GET_USER_PROFILE = gql`
   query GetUserProfile {
     me {
@@ -51,12 +61,14 @@ const GET_USER_PROFILE = gql`
   }
 `;
 
+/** GraphQL query to get the count of unread notifications for the current user. */
 const GET_UNREAD_NOTIFICATIONS_COUNT = gql`
   query GetUnreadNotificationsCount {
     unreadNotificationsCount
   }
 `;
 
+/** GraphQL query to fetch all active external links, used for dynamic sidebar menu items. */
 const GET_ACTIVE_EXTERNAL_LINKS = gql`
   query GetActiveExternalLinks {
     activeExternalLinks {
@@ -75,7 +87,7 @@ const GET_ACTIVE_EXTERNAL_LINKS = gql`
   }
 `;
 
-
+/** GraphQL query to fetch all available user roles, primarily used for the admin role switcher. */
 const GET_ALL_ROLES = gql`
   query GetAllRoles {
     roles {
@@ -86,37 +98,153 @@ const GET_ALL_ROLES = gql`
   }
 `;
 
+/**
+ * Defines the structure for a navigation item in the sidebar.
+ */
 interface NavItem {
+  /** The display name of the navigation item (potentially localized). */
   name: string;
+  /** The URL path for the navigation link. */
   href: string;
+  /** The React component type for the icon (e.g., from `lucide-react`). */
   icon: React.ElementType;
+  /** Optional array of child navigation items for creating submenus. */
   children?: NavItem[];
+  /** Optional array of role names that are allowed to see this item. */
   roles?: string[];
+  /** Optional array of permission strings required to see this item. */
   permissions?: string[];
+  /** Optional badge configuration to display next to the item (e.g., notification count). */
   badge?: {
+    /** A key for the badge, not directly used in rendering but can be for identification. */
     key: string;
+    /** The numerical value to display in the badge. */
     value: number;
   };
+  /** If true, the navigation item is rendered as disabled. */
   disabled?: boolean;
+  /** If true, a lock icon might be displayed, indicating restricted access (cosmetic or tied to actual permissions). */
   locked?: boolean;
+  /** Access type for the link, typically 'PUBLIC', 'ROLES', 'USERS', 'MIXED' (used for external links). */
   accessType?: string;
+  /** Array of role IDs that are allowed access (used for external links). */
   allowedRoles?: string[];
 }
 
+/**
+ * Defines the structure for an external link object fetched from the API.
+ */
 interface ExternalLinkType {
+  /** Unique identifier for the external link. */
   id: string;
+  /** Display name of the link. */
   name: string;
+  /** The URL the link points to. */
   url: string;
+  /** String identifier for the icon (maps to a lucide-react icon component). */
   icon: string;
+  /** Optional description for the link. */
   description?: string;
+  /** Order in which the link should appear. */
   order: number;
+  /** Type of access control: 'PUBLIC', 'ROLES', 'USERS', 'MIXED'. */
   accessType: string;
+  /** Array of role IDs allowed to access this link. */
   allowedRoles: string[];
+  /** Optional array of user IDs specifically allowed to access this link. */
   allowedUsers?: string[];
+  /** Optional array of user IDs specifically denied access to this link. */
   deniedUsers?: string[];
+  /** Whether the link is currently active/enabled. */
   isActive?: boolean;
 }
 
+/**
+ * `DashboardSidebar` is the primary navigation interface within the user dashboard.
+ * It dynamically renders navigation items based on user roles and permissions,
+ * fetches user profile data, notification counts, and external links via GraphQL.
+ * It also features an admin role simulation capability and responsive design
+ * for desktop and mobile views.
+ *
+ * This component currently takes no direct props, as locale is obtained from
+ * `useParams` and the dictionary for internationalization is obtained from `useI18n`.
+ *
+ * **State Management:**
+ * - `isOpen`: Boolean, controls the visibility of the mobile sidebar.
+ * - `userMenuOpen`: Boolean, toggles the visibility of the user-specific navigation items dropdown (desktop).
+ * - `unreadCount`: Number, stores the count of unread notifications, fetched via GraphQL.
+ * - `selectedRole`: String or null, holds the role an admin is currently simulating for viewing the dashboard.
+ * - `roleMenuOpen`: Boolean, toggles the admin role switcher dropdown.
+ * - `logoUrl`: String, dynamically set to the application's logo URL.
+ *
+ * **Data Fetching (GraphQL with Apollo Client):**
+ * - `GET_USER_PROFILE`: Fetches the current authenticated user's profile information (ID, email, first name, last name, role).
+ *   Uses `fetchPolicy: 'network-only'` to ensure data is fresh. `onCompleted` logs loaded data.
+ * - `GET_UNREAD_NOTIFICATIONS_COUNT`: Fetches the count of unread notifications for the user.
+ *   Updates the `unreadCount` state via `useEffect`. Uses `fetchPolicy: 'cache-and-network'`.
+ * - `GET_ACTIVE_EXTERNAL_LINKS`: Fetches a list of active external links to be displayed in the sidebar.
+ *   Uses `fetchPolicy: 'network-only'` and `nextFetchPolicy: 'network-only'`. It automatically refetches
+ *   when the `effectiveRole` changes to update links based on the new role context. Includes authorization headers.
+ * - `GET_ALL_ROLES`: Fetched only if the current user is an admin (`isAdmin` is true).
+ *   Used to populate the role switcher dropdown, allowing admins to simulate other roles.
+ *
+ * **Role and Permission Logic:**
+ * - `isAdmin`, `isManager`: Booleans derived from the user's actual role (from `GET_USER_PROFILE` query or `useAuth` hook).
+ * - `effectiveRole`: A memoized value (`useMemo`) that determines the role context for displaying the sidebar.
+ *   If an admin is simulating a role via `selectedRole`, `effectiveRole` becomes the simulated role. Otherwise, it's the user's actual role.
+ * - `showAsAdmin`, `showAsManager`, `showAsUser`, `showAsEmployee`, `shouldShowRegularUserView`: Booleans derived from `effectiveRole`
+ *   to conditionally render different navigation sections and UI elements.
+ * - **Admin Role Switcher**: If `isAdmin` is true, a dropdown menu allows the admin to select a role to simulate.
+ *   Changing this selection updates `selectedRole`, which in turn updates `effectiveRole` and triggers a refetch of external links.
+ *   The roles in the switcher are sorted (`sortedRoles`).
+ *
+ * **Navigation Structure:**
+ * - `baseNavigationItems`: An array of `NavItem` objects for common user links (e.g., Dashboard, Notifications, Benefits, Help, Settings).
+ *   Icons from `lucide-react` are used. Notification item includes a badge for `unreadCount`.
+ * - `adminNavigationItems`: Array of `NavItem` for admin-specific views (e.g., Admin Dashboard, User Management, External Links config).
+ * - `managerNavigationItems`: Array of `NavItem` for manager-specific views (e.g., Create Notifications, Staff Management).
+ * - `toolsNavigationItems`: Array of `NavItem` for accessing major tools like CMS and Bookings, typically restricted to Admin/Manager roles.
+ *   The CMS item has children for sub-navigation.
+ * - **External Links**: Fetched from the API via `GET_ACTIVE_EXTERNAL_LINKS`. The `getFilteredExternalLinks` function processes these:
+ *   - It filters links based on the `effectiveRole` and the link's `accessType` (PUBLIC, ROLES, USERS, MIXED), `allowedRoles`, and `allowedUsers`.
+ *   - If an admin is simulating a role, filtering is based on the `selectedRole`.
+ *   - If an admin is not simulating, all links are typically shown (or based on admin's own permissions if stricter).
+ *   - For non-admin users, links are filtered based on their actual role and user ID.
+ *   - The function maps the filtered API data to `NavItem` objects, using `getIconComponent` to resolve icon string names to `lucide-react` components.
+ * - `getIconComponent`: A utility function to map string icon names (received from `GET_ACTIVE_EXTERNAL_LINKS`) to actual `lucide-react` icon components.
+ *
+ * **Rendering Logic:**
+ * - `renderNavigationItems`: An internal function that conditionally renders different sets of navigation links
+ *   (`baseNavigationItems`, `adminNavigationItems`, `managerNavigationItems`, `toolsNavigationItems`) based on the `effectiveRole`
+ *   (specifically `showAsAdmin`, `showAsManager`, `showAsUser`, `showAsEmployee`, `shouldShowRegularUserView`).
+ *   It ensures users only see links appropriate for their current (or simulated) role context.
+ * - `renderBadge`: An internal function to display a badge with a count (e.g., for unread notifications) on a navigation item.
+ * - **Redirection for 'USER' role**: If a user whose `effectiveRole` is 'USER' attempts to access internal dashboard paths
+ *   (like `/dashboard/*`, `/admin/*`, `/manager/*`), a `useEffect` hook redirects them to the first available external link
+ *   or to the base locale path (`/:locale`) to prevent access to unauthorized areas.
+ *
+ * **UI Behavior:**
+ * - **Desktop Sidebar**: Displayed as a fixed sidebar on larger screens (`lg:` breakpoint and up).
+ *   Includes user avatar, name, role (actual, not simulated), and a logout button in the footer.
+ *   Admin-specific tools (New User, Message buttons) and the role switcher dropdown are displayed within the main content area of the sidebar if the user is an admin.
+ * - **Mobile Sidebar**: Hidden by default and can be toggled using a floating `MenuIcon` button. When open, it overlays
+ *   content. It includes a header with the logo and a close button (`XIcon`), and a similar footer with user info and logout.
+ *   The role switcher for admins is also available in the mobile view.
+ * - `toggleSidebar`: Function to open/close the mobile sidebar by toggling the `isOpen` state.
+ * - `handleLogout`: Clears the `session-token` cookie and redirects the user to the login page for the current locale.
+ *
+ * **Hooks Used:**
+ * - `useEffect`, `useState`, `useMemo` (from React) for state and lifecycle management.
+ * - `usePathname`, `useParams` (from `next/navigation`) for route and locale information.
+ * - `useI18n` (custom hook) for internationalization of static text strings (e.g., "Dashboard", "Settings", role names).
+ * - `useAuth` (custom hook) for accessing basic client-side authentication status and user data.
+ * - `useQuery` (from `@apollo/client`) for GraphQL data fetching.
+ *
+ * **Helper functions (internal):**
+ * - `translateRole`: Translates role names (e.g., 'ADMIN', 'USER') using the i18n dictionary for display.
+ * - `getRoleSwitcherText`: Formats the text displayed on the role switcher button, indicating the currently simulated role.
+ * - `formatTextWithRole`: Formats a string from the i18n dictionary, replacing a `{role}` placeholder with a translated role name.
+ */
 export function DashboardSidebar() {
   const pathname = usePathname();
   const params = useParams();

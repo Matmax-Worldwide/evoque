@@ -1,3 +1,20 @@
+/**
+ * @fileoverview This file provides a set of Accordion components for use within the application.
+ * It is based on the Radix UI Accordion primitives (`@radix-ui/react-accordion`)
+ * and is styled using Tailwind CSS, consistent with the ShadCN/ui library conventions.
+ *
+ * The implementation appears to be a standard setup for an accordion, likely generated
+ * or adapted from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code.
+ *
+ * Exported Components:
+ * - `Accordion`: The root component that wraps accordion items.
+ * - `AccordionItem`: Represents an individual collapsible item within the accordion.
+ * - `AccordionTrigger`: The part of an item that is clicked to expand or collapse its content.
+ *   It includes a chevron icon that rotates based on the open/closed state.
+ * - `AccordionContent`: The container for the content that is shown or hidden.
+ *   It includes animations for a smooth open/close transition.
+ */
 "use client"
 
 import * as React from "react"

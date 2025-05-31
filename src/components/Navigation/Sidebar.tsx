@@ -1,3 +1,9 @@
+/**
+ * @fileoverview This file defines the Sidebar component, a generic, client-side,
+ * collapsible navigation sidebar. Its content, including multi-level navigation links,
+ * is dynamically generated from a `menu` object prop. It supports active link
+ * highlighting and uses `lucide-react` for icons.
+ */
 'use client';
 
 import React, { useState } from 'react';
@@ -5,17 +11,88 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { useParams, usePathname } from 'next/navigation';
-import { Menu, MenuItem } from '@/app/api/graphql/types';
+import { Menu, MenuItem } from '@/app/api/graphql/types'; // Assumed to be documented at source
 
+/**
+ * Props for the Sidebar component.
+ * The `Menu` and `MenuItem` types are imported from '@/app/api/graphql/types'
+ * and define the structure of the navigation menu data.
+ */
 interface SidebarProps {
+  /** The `Menu` object that defines the navigation links and their hierarchy. */
   menu: Menu;
+  /** Optional URL for the site/module logo displayed at the top of the sidebar. */
   logoUrl?: string;
+  /**
+   * Optional title for the sidebar, often the site or module name.
+   * Defaults to `menu.name` if not provided.
+   */
   title?: string;
+  /** Optional additional CSS class names to apply to the sidebar's root aside element. */
   className?: string;
+  /**
+   * Optional boolean to enable or disable the sidebar's collapsibility.
+   * Defaults to `true` (collapsible).
+   */
   collapsible?: boolean;
+  /**
+   * Optional current locale string (e.g., "en", "es").
+   * If not provided, it falls back to `useParams` to get the locale from the URL,
+   * defaulting to 'en' if still unavailable. Used for constructing localized link URLs.
+   */
   locale?: string;
 }
 
+/**
+ * `Sidebar` is a client-side component that renders a configurable and collapsible
+ * navigation sidebar. Its primary content (navigation links, hierarchy) is dynamically
+ * generated based on the `menu` prop.
+ *
+ * **State Management:**
+ * - `collapsed`: Boolean, controls the collapsed/expanded state of the entire sidebar.
+ * - `expandedItems`: Record<string, boolean>, tracks the open/closed state of individual
+ *   parent menu items (those with children) to manage submenu visibility.
+ *
+ * **Dynamic Menu Rendering (`renderMenuItems` function):**
+ * - This is a recursive function that iterates through `menu.items` (and their children).
+ * - For each `MenuItem`:
+ *   - If it has `children`, it's rendered as an expandable section. A button with the item's title
+ *     and a chevron icon (`ChevronDownIcon`/`ChevronUpIcon`) is displayed. Clicking this button
+ *     toggles the item's expanded state (managed by `expandedItems` and `toggleExpand`).
+ *     The children are then recursively rendered as a nested list if the parent is expanded and
+ *     the sidebar itself is not fully collapsed.
+ *   - If it has no `children`, it's rendered as a direct `Link`.
+ * - **Active Link Detection**: The `isActive` function determines if a menu item's URL matches
+ *   the current `pathname` (obtained via `usePathname`) to apply active link styling.
+ *   It also ensures that parent items are automatically expanded if any of their children
+ *   are the active link.
+ * - **URL Construction**: Link URLs are derived from `item.url` if present, otherwise from
+ *   `item.page.slug` (prefixed with the current `locale`). Defaults to '#' if neither is available.
+ * - **Icon Display**: If `item.icon` is provided (expected to be a string name or representation),
+ *   it's displayed next to the title (currently rendered as text, not an icon component).
+ *
+ * **Collapsible Behavior:**
+ * - If `collapsible` prop is true (default), a collapse button (ChevronUpIcon/ChevronDownIcon, rotated)
+ *   is shown in the header.
+ * - Clicking this button toggles the `collapsed` state.
+ * - When `collapsed` is true:
+ *   - The sidebar width shrinks.
+ *   - Item titles and the main sidebar title are hidden (using `sr-only` for accessibility or by not rendering).
+ *   - The footer copyright text is hidden.
+ *   - Submenus are not rendered even if their parent item is marked as expanded.
+ *
+ * **Header and Footer:**
+ * - **Header**: Displays the `logoUrl` (if provided) and the `title`. It also contains the
+ *   main sidebar collapse button. Content is hidden appropriately when collapsed.
+ * - **Footer**: Displays a copyright notice with the current year and the `title`. This section
+ *   is hidden when the sidebar is collapsed.
+ *
+ * It uses `useParams` (for locale fallback) and `usePathname` (for active link detection)
+ * from `next/navigation`.
+ *
+ * @param {SidebarProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered sidebar component.
+ */
 const Sidebar: React.FC<SidebarProps> = ({
   menu,
   logoUrl,

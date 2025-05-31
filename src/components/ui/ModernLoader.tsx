@@ -1,17 +1,76 @@
+/**
+ * @fileoverview This file defines the ModernLoader component, a client-side
+ * custom loading indicator. It offers multiple visual styles (variants),
+ * an optional text message, and an optional progress bar display.
+ * Animations are implemented using `framer-motion`.
+ */
 'use client';
 
 import React from 'react';
 import { motion } from 'framer-motion';
 
+/**
+ * Props for the ModernLoader component.
+ */
 interface ModernLoaderProps {
+  /**
+   * The visual style of the loader.
+   * - 'apple': An Apple-style spinning loader with a pulsing background and centered message/progress.
+   * - 'netflix': A Netflix-style loader with three vertical pulsing bars.
+   * - 'google': A Google-style loader with a multi-colored circular spinner.
+   * - 'minimal': A simple circular border spinner.
+   * @default 'apple'
+   */
   variant?: 'apple' | 'netflix' | 'google' | 'minimal';
+  /**
+   * Optional text message displayed with the loader.
+   * @default 'Cargando...'
+   */
   message?: string;
+  /**
+   * Optional current progress value (0-100).
+   * Only displayed if `showProgress` is true and `variant` is 'apple'.
+   */
   progress?: number;
+  /**
+   * Whether to display the progress bar and percentage.
+   * Currently effective only for the 'apple' variant.
+   * @default false
+   */
   showProgress?: boolean;
+  /**
+   * Size of the loader animation.
+   * 'sm': Small
+   * 'md': Medium
+   * 'lg': Large
+   * @default 'md'
+   */
   size?: 'sm' | 'md' | 'lg';
+  /** Optional additional CSS classes for custom styling of the loader container. */
   className?: string;
 }
 
+/**
+ * `ModernLoader` is a client-side component that displays a versatile and animated
+ * loading indicator. It supports multiple visual styles (`variant`), can show a
+ * custom message, and optionally display a progress bar (primarily for the 'apple' variant).
+ *
+ * Internal Loader Style Functions:
+ * - `AppleLoader`: Renders an Apple-inspired circular spinner with a pulsing background,
+ *   a message, and an optional progress bar. Typically covers the full screen.
+ * - `NetflixLoader`: Renders a Netflix-inspired loader with three red vertical bars
+ *   animating their scale. Typically covers the full screen.
+ * - `GoogleLoader`: Renders a Google-inspired loader with a circular spinner composed
+ *   of four colored arcs. Typically covers the full screen.
+ * - `MinimalLoader`: Renders a simple, unopinionated circular border spinner that can be
+ *   embedded within other components (does not cover full screen by default).
+ *
+ * The `variant` prop determines which of these loader styles is rendered.
+ * Animations are powered by `framer-motion`.
+ *
+ * @param {ModernLoaderProps} props - The props for the component.
+ * @returns {React.JSX.Element} The rendered loading indicator.
+ */
 const ModernLoader: React.FC<ModernLoaderProps> = ({
   variant = 'apple',
   message = 'Cargando...',
