@@ -1,3 +1,28 @@
+/**
+ * @fileoverview This file provides a set of components for creating styled
+ * HTML tables. These components are designed to be used together to construct
+ * well-structured and consistently styled tables for displaying data.
+ *
+ * The components (`Table`, `TableHeader`, `TableBody`, `TableFooter`, `TableHead`,
+ * `TableRow`, `TableCell`, `TableCaption`) are `React.forwardRef` wrappers around
+ * their respective standard HTML table elements (e.g., `<table>`, `<thead>`, `<tr>`, `<th>`, `<td>`).
+ * They are styled using Tailwind CSS, with the `cn` utility function for merging
+ * and applying conditional classes.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, focusing on providing basic table structure
+ * and styling without complex interactive features directly within these base components.
+ *
+ * Exported Components and their general roles:
+ * - `Table`: The main wrapper for the HTML `<table>` element, also includes a `div` for overflow.
+ * - `TableHeader`: Wrapper for the `<thead>` element.
+ * - `TableBody`: Wrapper for the `<tbody>` element.
+ * - `TableFooter`: Wrapper for the `<tfoot>` element.
+ * - `TableHead`: Wrapper for a `<th>` (table header cell) element.
+ * - `TableRow`: Wrapper for a `<tr>` (table row) element.
+ * - `TableCell`: Wrapper for a `<td>` (table data cell) element.
+ * - `TableCaption`: Wrapper for a `<caption>` element.
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

@@ -1,3 +1,23 @@
+/**
+ * @fileoverview This file provides a Switch component, a toggle control that
+ * allows users to switch between two states (typically on/off or true/false).
+ *
+ * The `Switch` component is based on the Radix UI Switch primitives
+ * (`@radix-ui/react-switch`), specifically `SwitchPrimitives.Root` for the main
+ * switch area and `SwitchPrimitives.Thumb` for the draggable/animated part.
+ * It is styled using Tailwind CSS and includes visual transitions for state changes.
+ *
+ * Styling for different states (checked, unchecked, disabled) is applied via
+ * Tailwind CSS classes, including `data-[state=checked]` and `data-[state=unchecked]`
+ * selectors provided by Radix UI primitives.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code beyond the defined styling.
+ *
+ * Exported Component:
+ * - `Switch`: The main component for rendering the toggle switch.
+ */
 "use client"
 
 import * as React from "react"

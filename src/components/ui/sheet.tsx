@@ -1,3 +1,34 @@
+/**
+ * @fileoverview This file provides a suite of components for creating "sheet"
+ * user interfaces, which are slide-out panels typically used for side navigation,
+ * settings, or forms that appear from the edge of the screen.
+ *
+ * These components are built using Radix UI Dialog primitives (`@radix-ui/react-dialog`,
+ * aliased as `SheetPrimitive` here) as their foundation and are styled with
+ * Tailwind CSS. The `cva` (class-variance-authority) utility is used to manage
+ * different visual variants for the sheet's slide-in direction (top, bottom, left, right).
+ * The close icon is provided by `lucide-react`.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with customizations primarily focused on
+ * styling and adapting dialog primitives for sheet-like behavior.
+ *
+ * Exported Components and their general roles:
+ * - `Sheet`: The root component that manages the open/closed state of the sheet.
+ * - `SheetTrigger`: A button or element that, when clicked, opens the sheet.
+ * - `SheetClose`: A button specifically for closing the sheet from within its content.
+ * - `SheetPortal`: A Radix UI utility that renders its children into a new part of the DOM,
+ *   ensuring the sheet appears above other content.
+ * - `SheetOverlay`: A component that renders a fixed overlay behind the sheet content,
+ *   often used to dim the background.
+ * - `SheetContent`: The main container for the sheet's content, which slides into view.
+ *   It accepts a `side` prop (top, bottom, left, right; default 'right') to control
+ *   the slide direction and includes a default close button (X icon).
+ * - `SheetHeader`: A container for the sheet's header section.
+ * - `SheetFooter`: A container for the sheet's footer section.
+ * - `SheetTitle`: A component for rendering the title of the sheet, usually within `SheetHeader`.
+ * - `SheetDescription`: A component for rendering descriptive text within the sheet.
+ */
 "use client"
 
 import * as React from "react"

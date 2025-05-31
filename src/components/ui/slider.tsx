@@ -1,3 +1,22 @@
+/**
+ * @fileoverview This file provides a Slider component for selecting a numeric
+ * value from a range.
+ *
+ * The `Slider` component is based on the Radix UI Slider primitives
+ * (`@radix-ui/react-slider`), which include `Root` (the main container),
+ * `Track` (the slider bar), `Range` (the part of the track representing the
+ * selected value), and `Thumb` (the draggable handle). It is styled using
+ * Tailwind CSS.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with customizations primarily focused on
+ * applying Tailwind CSS classes to the Radix UI primitives for styling.
+ *
+ * Exported Component:
+ * - `Slider`: The main component that users will interact with. It composes the
+ *   Radix UI Slider primitives (`Root`, `Track`, `Range`, `Thumb`) into a single,
+ *   styled slider element.
+ */
 "use client"
 
 import * as React from "react"

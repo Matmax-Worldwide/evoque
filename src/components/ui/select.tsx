@@ -1,5 +1,31 @@
 "use client"
 
+/**
+ * @fileoverview This file provides a suite of components for creating customizable
+ * select dropdowns, allowing users to choose an option from a list. These components
+ * are built on top of the Radix UI Select primitives (`@radix-ui/react-select`)
+ * and are styled using Tailwind CSS. Icons used within the components (e.g., for
+ * checkmarks and dropdown arrows) are sourced from `lucide-react`.
+ *
+ * The implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with customizations primarily focused on
+ * applying Tailwind CSS classes for styling and integrating the Radix UI primitives
+ * into a composable set of React components.
+ *
+ * Exported Components and their general roles:
+ * - `Select`: The root component that manages the state of the select dropdown.
+ * - `SelectGroup`: A component to group related `SelectItem` components, often with a `SelectLabel`.
+ * - `SelectValue`: A component that displays the currently selected value within the `SelectTrigger`.
+ * - `SelectTrigger`: The button-like element that opens or closes the select dropdown.
+ * - `SelectContent`: The panel that appears when the `SelectTrigger` is activated, containing
+ *   the list of options (`SelectItem`). It includes `SelectScrollUpButton` and
+ *   `SelectScrollDownButton` for navigating long lists.
+ * - `SelectLabel`: A non-interactive label or heading within the `SelectContent`.
+ * - `SelectItem`: Represents an individual selectable option within the dropdown.
+ * - `SelectSeparator`: A visual separator line between groups of items or items.
+ * - `SelectScrollUpButton`: A button to scroll up within a long list of items in `SelectContent`.
+ * - `SelectScrollDownButton`: A button to scroll down within a long list of items in `SelectContent`.
+ */
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
