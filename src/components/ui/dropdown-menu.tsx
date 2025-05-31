@@ -1,3 +1,32 @@
+/**
+ * @fileoverview This file provides a comprehensive suite of components for creating
+ * interactive dropdown menus. These components are built on top of the Radix UI
+ * DropdownMenu primitives (`@radix-ui/react-dropdown-menu`) and are styled using
+ * Tailwind CSS. Icons used within the components (e.g., for checkmarks, submenu
+ * indicators) are sourced from `lucide-react`.
+ *
+ * The implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code beyond the styling and composition of
+ * Radix UI primitives.
+ *
+ * Exported Components and their general roles:
+ * - `DropdownMenu`: The root component that wraps all parts of a dropdown menu.
+ * - `DropdownMenuTrigger`: The element that, when clicked, opens or closes the dropdown menu.
+ * - `DropdownMenuContent`: The container for the menu items that appears when triggered.
+ * - `DropdownMenuItem`: A standard clickable item within the menu.
+ * - `DropdownMenuCheckboxItem`: A menu item that can be checked or unchecked.
+ * - `DropdownMenuRadioGroup`: A group container for `DropdownMenuRadioItem` components.
+ * - `DropdownMenuRadioItem`: A menu item that can be selected from a group, like a radio button.
+ * - `DropdownMenuLabel`: A non-interactive label or heading within the menu.
+ * - `DropdownMenuSeparator`: A visual separator line between groups of items.
+ * - `DropdownMenuShortcut`: A component to display keyboard shortcuts associated with a menu item.
+ * - `DropdownMenuGroup`: A component to group related menu items.
+ * - `DropdownMenuPortal`: A Radix UI utility for rendering the menu in a React portal.
+ * - `DropdownMenuSub`: The root component for a submenu.
+ * - `DropdownMenuSubTrigger`: An item that opens a submenu.
+ * - `DropdownMenuSubContent`: The container for the items within a submenu.
+ */
 "use client"
 
 import * as React from "react"

@@ -1,3 +1,28 @@
+/**
+ * @fileoverview This file provides a suite of components for creating modal dialogs.
+ * These components are built on top of the Radix UI Dialog primitives (`@radix-ui/react-dialog`)
+ * and are styled using Tailwind CSS. The close icon is provided by `lucide-react`.
+ *
+ * The implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code beyond styling and composition of
+ * Radix UI primitives.
+ *
+ * Exported Components and their general roles:
+ * - `Dialog`: The root component that manages the open/closed state of the dialog.
+ * - `DialogTrigger`: A button or element that, when clicked, opens the dialog.
+ * - `DialogPortal`: A Radix UI utility that renders its children into a new part of the DOM,
+ *   typically used to ensure the dialog appears above other content.
+ * - `DialogOverlay`: A component that renders a fixed overlay behind the dialog content,
+ *   often used to dim the background.
+ * - `DialogClose`: A button specifically for closing the dialog.
+ * - `DialogContent`: The main container for the dialog's content, which appears as a modal window.
+ *   It includes a default close button (X icon) in the top-right corner.
+ * - `DialogHeader`: A container for the dialog's header section, typically holding the title and description.
+ * - `DialogFooter`: A container for the dialog's footer, often used for action buttons.
+ * - `DialogTitle`: A component for rendering the title of the dialog, usually within `DialogHeader`.
+ * - `DialogDescription`: A component for rendering descriptive text within the dialog, usually within `DialogHeader`.
+ */
 "use client"
 
 import * as React from "react"

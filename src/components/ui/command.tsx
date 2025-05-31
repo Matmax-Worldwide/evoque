@@ -1,3 +1,30 @@
+/**
+ * @fileoverview This file provides a suite of components for building command
+ * palettes, searchable menus, and similar interactive list-based UIs.
+ *
+ * These components are built on top of the `cmdk` library (imported as `CommandPrimitive`)
+ * and are styled using Tailwind CSS, following conventions commonly found in UI
+ * libraries like ShadCN/ui. The `CommandDialog` component specifically integrates
+ * with the local `Dialog` component (from `@/components/ui/dialog`) to present
+ * the command palette within a modal. Icons (e.g., `Search` icon) are sourced
+ * from `lucide-react`.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with customizations primarily focused on
+ * applying Tailwind CSS classes for styling and integrating with other local UI
+ * components like `Dialog`.
+ *
+ * Exported Components and their general roles:
+ * - `Command`: The root container for a command menu.
+ * - `CommandDialog`: A component that renders the `Command` components within a dialog modal.
+ * - `CommandInput`: The input field for typing commands or search queries.
+ * - `CommandList`: The scrollable list that contains command items and groups.
+ * - `CommandEmpty`: A component to display when no results match the search query.
+ * - `CommandGroup`: A component to group related command items, often with a heading.
+ * - `CommandItem`: Represents an individual selectable item within the command list.
+ * - `CommandShortcut`: A component to display keyboard shortcuts associated with a `CommandItem`.
+ * - `CommandSeparator`: A visual separator between groups or items.
+ */
 "use client"
 
 import * as React from "react"

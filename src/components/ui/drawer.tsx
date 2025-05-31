@@ -1,3 +1,27 @@
+/**
+ * @fileoverview This file provides a suite of components for creating drawer
+ * user interfaces (slide-out panels). These components are built on top of the
+ * `vaul` library (imported as `DrawerPrimitive`) and are styled using Tailwind CSS.
+ *
+ * The implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with customizations primarily focused on
+ * applying Tailwind CSS classes for styling and integrating the `vaul` library
+ * into a composable set of React components.
+ *
+ * Exported Components and their general roles:
+ * - `Drawer`: The root component that manages the drawer's state. It accepts props like `shouldScaleBackground`.
+ * - `DrawerTrigger`: A button or element that, when clicked, opens or closes the drawer.
+ * - `DrawerPortal`: A utility from `vaul` for rendering the drawer content in a React portal.
+ * - `DrawerClose`: A button specifically for closing the drawer from within its content.
+ * - `DrawerOverlay`: A component that renders a fixed overlay behind the drawer content,
+ *   often used to dim the background when the drawer is open.
+ * - `DrawerContent`: The main container for the drawer's content, which slides into view.
+ *   It typically includes a visual handle at the top.
+ * - `DrawerHeader`: A container for the drawer's header section, usually for titles or main actions.
+ * - `DrawerFooter`: A container for the drawer's footer, often used for action buttons.
+ * - `DrawerTitle`: A component for rendering the title of the drawer, usually within `DrawerHeader`.
+ * - `DrawerDescription`: A component for rendering descriptive text within the drawer.
+ */
 "use client"
 
 import * as React from "react"

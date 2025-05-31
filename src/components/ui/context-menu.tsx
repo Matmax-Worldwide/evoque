@@ -1,3 +1,32 @@
+/**
+ * @fileoverview This file provides a comprehensive suite of components for creating
+ * context menus (right-click menus). These components are built on top of the
+ * Radix UI ContextMenu primitives (`@radix-ui/react-context-menu`) and are styled
+ * using Tailwind CSS. Icons used within the components (e.g., for checkmarks,
+ * submenu indicators) are sourced from `lucide-react`.
+ *
+ * The implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code beyond the styling and composition of
+ * Radix UI primitives.
+ *
+ * Exported Components and their general roles:
+ * - `ContextMenu`: The root component that wraps all parts of a context menu.
+ * - `ContextMenuTrigger`: The element that, when right-clicked, opens the context menu.
+ * - `ContextMenuContent`: The container for the menu items that appears when triggered.
+ * - `ContextMenuItem`: A standard clickable item within the menu.
+ * - `ContextMenuCheckboxItem`: A menu item that can be checked or unchecked.
+ * - `ContextMenuRadioGroup`: A group container for `ContextMenuRadioItem` components.
+ * - `ContextMenuRadioItem`: A menu item that can be selected from a group, like a radio button.
+ * - `ContextMenuLabel`: A non-interactive label or heading within the menu.
+ * - `ContextMenuSeparator`: A visual separator line between groups of items.
+ * - `ContextMenuShortcut`: A component to display keyboard shortcuts associated with a menu item.
+ * - `ContextMenuGroup`: A component to group related menu items.
+ * - `ContextMenuPortal`: A Radix UI utility for rendering the menu in a React portal.
+ * - `ContextMenuSub`: The root component for a submenu.
+ * - `ContextMenuSubTrigger`: An item that opens a submenu.
+ * - `ContextMenuSubContent`: The container for the items within a submenu.
+ */
 "use client"
 
 import * as React from "react"
