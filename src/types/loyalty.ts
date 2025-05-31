@@ -2,116 +2,158 @@
 
 /**
  * This file contains the core TypeScript interfaces for the Loyalty Program module.
- * These interfaces will be populated with specific properties as development progresses
- * and features are implemented.
  */
 
-export interface LoyaltyProfile {
-  // Example properties (to be refined):
-  // userId: string;
-  // currentPoints: number;
-  // tierId?: string;
-  // lifetimePoints?: number;
-  // joinedDate?: Date;
+import { type LucideIcon } from 'lucide-react';
+
+export interface Tier {
+  id: string;
+  name: string;
+  description?: string;
+  // Points required to enter this tier (absolute value from 0)
+  minPoints: number;
+  // Points required to enter the *next* tier (absolute value from 0)
+  // If this is the highest tier, this might be undefined or Infinity
+  pointsToNextTier?: number;
+  benefits?: string[];
+  iconName?: string; // For mapping to a LucideIcon or for an image URL
+  multiplier?: number; // Points earning multiplier
 }
 
+export interface LoyaltyProfile {
+  userId: string;
+  currentPoints: number;
+  pendingPoints?: number;
+  lifetimePoints?: number;
+  joinedDate?: string | Date; // ISO string or Date object
+  tier?: Tier; // Embed Tier object or just tierId
+  // Example if only tierId is stored and Tier details are fetched separately:
+  // currentTierId?: string;
+}
+
+export type PointsTransactionType = 'earn' | 'redeem' | 'bonus' | 'adjustment' | 'other' | 'transfer_in' | 'transfer_out';
+
 export interface PointsTransaction {
-  // Example properties:
-  // id: string;
-  // type: 'earn' | 'redeem' | 'transfer_in' | 'transfer_out' | 'bonus' | 'adjustment';
-  // points: number;
-  // description?: string;
-  // transactionDate: Date;
-  // relatedCampaignId?: string;
-  // relatedRewardId?: string;
+  id: string;
+  type: PointsTransactionType;
+  points: number; // Positive for earn/bonus/transfer_in, negative for redeem/transfer_out/adjustment
+  description: string;
+  transactionDate: string | Date; // ISO string or Date object
+  relatedCampaignId?: string;
+  relatedRewardId?: string;
+  customIconName?: string; // Optional: if a specific icon other than type-default is needed
 }
 
 export interface Reward {
-  // Example properties:
-  // id: string;
-  // name: string;
-  // description?: string;
-  // pointsRequired: number;
-  // category?: string; // e.g., 'product', 'service', 'discount'
-  // imageUrl?: string;
-  // stock?: number; // -1 for unlimited
-  // isActive: boolean;
-  // validityStartDate?: Date;
-  // validityEndDate?: Date;
-}
-
-export interface Tier {
-  // Example properties:
-  // id: string;
-  // name: string;
-  // description?: string;
-  // pointsThreshold: number; // Points required to reach this tier
-  // benefits: string[]; // List of benefits
-  // iconUrl?: string;
-  // multiplier?: number; // Points earning multiplier
+  id: string;
+  name: string;
+  description?: string;
+  pointsRequired: number;
+  category?: string; // e.g., 'Product', 'Service', 'Discount', 'Experience'
+  imageUrl?: string; // URL for the reward image
+  stock?: number; // Use -1 or undefined for unlimited stock
+  isActive: boolean;
+  validityStartDate?: string | Date;
+  validityEndDate?: string | Date;
+  // Potentially add more fields like:
+  // vendor?: string;
+  // termsAndConditions?: string;
 }
 
 export interface Campaign {
-  // Example properties:
-  // id: string;
-  // name: string;
-  // description?: string;
-  // startDate: Date;
-  // endDate: Date;
-  // type: 'points_multiplier' | 'bonus_points' | 'product_discount' | 'event_access';
-  // earningMultiplier?: number;
-  // bonusPoints?: number;
-  // eligibilityRules?: any; // Define specific rules later
-  // isActive: boolean;
+  // To be detailed when Campaign components are built
+  id: string;
+  name: string;
+  description?: string;
+  startDate?: string | Date;
+  endDate?: string | Date;
+  type?: 'points_multiplier' | 'bonus_points' | 'product_discount' | 'event_access';
+  isActive?: boolean;
 }
 
 export interface RedemptionRequest {
-  // Example properties:
-  // id: string;
-  // userId: string;
-  // rewardId: string;
-  // pointsSpent: number;
-  // requestDate: Date;
-  // status: 'pending' | 'approved' | 'rejected' | 'completed';
-  // fulfillmentDetails?: any; // e.g., voucher code, shipping info
+  // To be detailed when Redemption components/logic are built
+  id: string;
+  userId?: string;
+  rewardId?: string;
+  pointsSpent?: number;
+  requestDate?: string | Date;
+  status?: 'pending' | 'approved' | 'rejected' | 'completed';
 }
 
 export interface WalletConnection {
-  // Example properties:
-  // walletAddress: string;
-  // provider: 'metamask' | 'walletconnect' | string; // Can be extended
-  // connectedDate: Date;
-  // isActive: boolean;
+  // To be detailed later
+  walletAddress?: string;
+  provider?: string;
+  connectedDate?: string | Date;
+  isActive?: boolean;
 }
 
 export interface LoyaltyAnalytics {
-  // This might be a collection of different stats rather than a single object
-  // Example (could be part of a larger dashboard type):
-  // totalPointsEarned?: number;
-  // totalPointsRedeemed?: number;
-  // activeUsers?: number;
-  // redemptionRate?: number;
+  // To be detailed later
+  totalPointsEarned?: number;
+  // ... other analytics fields
 }
 
 export interface EarningRule {
-  // Example properties:
-  // id: string;
-  // action: string; // e.g., 'purchase', 'referral', 'social_share'
-  // pointsEarned: number;
-  // conditions?: any; // e.g., minimum purchase amount
-  // isActive: boolean;
+  // To be detailed later
+  id: string;
+  action?: string;
+  pointsEarned?: number;
+  isActive?: boolean;
 }
 
 export interface NotificationPreferences {
-  // Example properties:
-  // userId: string;
-  // emailNotifications: {
-  //   promotions?: boolean;
-  //   pointsUpdates?: boolean;
-  //   tierUpdates?: boolean;
-  // };
-  // smsNotificationsEnabled?: boolean;
-  // pushNotificationsEnabled?: boolean;
+  // To be detailed later
+  userId?: string;
+  emailNotifications?: {
+    promotions?: boolean;
+    pointsUpdates?: boolean;
+    tierUpdates?: boolean;
+  };
 }
 
-// Add other core types as identified in the guidelines or during development.
+// StatItem for QuickStatsGrid - can remain local to component or be moved here if shared
+export interface StatDisplayItem {
+  id: string;
+  label: string;
+  value: string | number;
+  icon?: LucideIcon;
+  unit?: string;
+  bgColor?: string;
+  textColor?: string;
+}
+
+// ActivityItem for RecentActivityFeed - can remain local or be moved here
+export interface ActivityFeedItem {
+  id: string;
+  description: string;
+  points?: number;
+  date: string | Date;
+  icon?: LucideIcon; // Overrides type-default icon
+  type?: PointsTransactionType; // Used for default icon and styling
+}
+
+// FeaturedRewardItem for FeaturedRewardsCarousel - can remain local or be moved here
+export interface FeaturedCarouselRewardItem {
+  id: string;
+  name: string;
+  pointsRequired: number;
+  imageUrl?: string;
+  category?: string;
+}
+
+// TierProgressBarProps related types - can remain local or be moved here if needed
+export interface TierProgressDisplayInfo {
+    currentTierName?: string;
+    nextTierName?: string;
+    currentPointsInTier: number;
+    pointsNeededForNextTier: number;
+}
+
+
+// Ensure this file is updated with these refined interfaces.
+// The interfaces for Campaign, RedemptionRequest etc. are still minimal placeholders.
+// The local types from components (StatDisplayItem, ActivityFeedItem, etc.) are added here for potential broader use,
+// but could also remain co-located with their components if not shared. For now, including them here for completeness
+// of types related to what has been built.

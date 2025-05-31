@@ -1,136 +1,111 @@
 // src/contexts/LoyaltyContext.tsx
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-// Assuming Tier and PointsTransaction types will be defined in src/types/loyalty.ts
-// For now, we'll use placeholder types or any.
-// import { Tier, PointsTransaction, Reward } from '@/types/loyalty';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import { Tier, LoyaltyProfile, PointsTransaction, Reward } from '@/types/loyalty';
 
-// Placeholder types - replace with actual imports from '@/types/loyalty' when available
-type Tier = any;
-type PointsTransaction = any;
-type Reward = any;
+// Placeholder types if not fully defined - these should ideally come from a robust mock data source or API spec
+const silverTierMock: Tier = { id: 'silver', name: 'Silver', minPoints: 0, pointsToNextTier: 1000, iconName: 'ShieldCheckIcon' };
+const goldTierMock: Tier = { id: 'gold', name: 'Gold', minPoints: 1000, pointsToNextTier: 5000, iconName: 'ShieldCheckIcon' };
 
-// 1. Define State and Action Interfaces
+
+type ProfileLoadingState = 'idle' | 'loading' | 'success' | 'error';
+
 interface LoyaltyContextState {
-  currentPoints: number | null;
-  activeTier: Tier | null;
-  pendingTransactions: PointsTransaction[];
-  selectedRewards: Reward[];
-  notifications: string[]; // Or a more complex Notification object
+  profile: LoyaltyProfile | null;
+  profileLoadingState: ProfileLoadingState;
+  profileError: string | null;
+
+  // Keep other states if they are truly global, or manage them locally in components
+  pendingTransactions: PointsTransaction[]; // Example, might be fetched per page
+  selectedRewards: Reward[]; // Example, likely UI state, not global data
+  notifications: string[];
   walletStatus: 'connected' | 'disconnected' | 'connecting' | 'idle';
-  isLoading: boolean;
-  error: string | null;
 }
 
 interface LoyaltyContextActions {
-  updateBalance: (points: number) => void;
-  processRedemption: (rewardId: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => void;
+  // connectWallet: () => Promise<void>; // Keep if relevant
+  // disconnectWallet: () => void; // Keep if relevant
   queueNotification: (message: string) => void;
-  clearError: () => void;
-  // Add other actions as needed
+  clearProfileError: () => void;
+  // updateBalance: (points: number) => void; // This might be part of refreshProfile or specific mutations
+  // processRedemption: (rewardId: string) => Promise<void>; // This is a specific action, likely not just context update
 }
 
-// Combine State and Actions for the context value
 type LoyaltyContextType = LoyaltyContextState & LoyaltyContextActions;
 
-// 2. Create the Context
 const LoyaltyContext = createContext<LoyaltyContextType | undefined>(undefined);
 
-// 3. Implement the Context Provider
-interface LoyaltyContextProviderProps {
-  children: ReactNode;
-}
+export const LoyaltyContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [profile, setProfile] = useState<LoyaltyProfile | null>(null);
+  const [profileLoadingState, setProfileLoadingState] = useState<ProfileLoadingState>('idle');
+  const [profileError, setProfileError] = useState<string | null>(null);
 
-export const LoyaltyContextProvider: React.FC<LoyaltyContextProviderProps> = ({ children }) => {
-  const [currentPoints, setCurrentPoints] = useState<number | null>(null);
-  const [activeTier, setActiveTier] = useState<Tier | null>(null);
+  // Other states - consider if they are truly global or should be local to specific components/pages
   const [pendingTransactions, setPendingTransactions] = useState<PointsTransaction[]>([]);
   const [selectedRewards, setSelectedRewards] = useState<Reward[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
   const [walletStatus, setWalletStatus] = useState<'connected' | 'disconnected' | 'connecting' | 'idle'>('idle');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Placeholder Actions
-  const updateBalance = useCallback((points: number) => {
-    console.log('Context: updateBalance called with', points);
-    setCurrentPoints(prev => (prev || 0) + points); // Example update
-  }, []);
-
-  const processRedemption = useCallback(async (rewardId: string) => {
-    console.log('Context: processRedemption called for rewardId', rewardId);
-    setIsLoading(true);
-    setError(null);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Example: Check if user has enough points, then deduct points, add reward to user profile
-    // For now, just log and set loading state
-    setIsLoading(false);
-    // In a real scenario, you might throw an error or update state based on success
-  }, []);
 
   const refreshProfile = useCallback(async () => {
     console.log('Context: refreshProfile called');
-    setIsLoading(true);
-    setError(null);
-    // Simulate API call to fetch user's loyalty profile
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Example: update currentPoints, activeTier, etc.
-    // setCurrentPoints(1000); // Dummy data
-    // setActiveTier({ id: 'gold', name: 'Gold Tier' }); // Dummy data
-    setIsLoading(false);
-  }, []);
+    setProfileLoadingState('loading');
+    setProfileError(null);
+    try {
+      // Simulate API call to fetch user's loyalty profile
+      await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate delay
 
-  const connectWallet = useCallback(async () => {
-    console.log('Context: connectWallet called');
-    setWalletStatus('connecting');
-    setIsLoading(true);
-    setError(null);
-    // Simulate wallet connection
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setWalletStatus('connected'); // or 'failed' and setError
-    setIsLoading(false);
-  }, []);
-
-  const disconnectWallet = useCallback(() => {
-    console.log('Context: disconnectWallet called');
-    setWalletStatus('disconnected');
-    // Clear any wallet-related state
+      // Mocked profile data
+      const mockFetchedProfile: LoyaltyProfile = {
+        userId: 'user-123-context',
+        currentPoints: 820,
+        pendingPoints: 75,
+        lifetimePoints: 2800,
+        joinedDate: new Date(Date.now() - 120 * 86400000).toISOString(),
+        tier: silverTierMock, // Assigning the mock tier
+      };
+      setProfile(mockFetchedProfile);
+      setProfileLoadingState('success');
+    } catch (err) {
+      console.error('Context: Failed to refresh profile', err);
+      setProfileError(err instanceof Error ? err.message : 'Failed to load profile.');
+      setProfileLoadingState('error');
+    }
   }, []);
 
   const queueNotification = useCallback((message: string) => {
     console.log('Context: queueNotification called with', message);
     setNotifications(prev => [...prev, message]);
-    // Optional: auto-remove notification after some time
     setTimeout(() => {
       setNotifications(prev => prev.filter(msg => msg !== message));
     }, 5000);
   }, []);
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearProfileError = useCallback(() => {
+    setProfileError(null);
+    if(profileLoadingState === 'error') {
+        setProfileLoadingState('idle'); // Reset state if error is cleared
+    }
+  }, [profileLoadingState]);
+
+  // Consider if an initial profile load is needed when context provider mounts
+  // useEffect(() => {
+  //   refreshProfile();
+  // }, [refreshProfile]);
+
 
   const contextValue: LoyaltyContextType = {
-    currentPoints,
-    activeTier,
-    pendingTransactions,
+    profile,
+    profileLoadingState,
+    profileError,
+    pendingTransactions, // Pass through other states if kept global
     selectedRewards,
     notifications,
     walletStatus,
-    isLoading,
-    error,
-    updateBalance,
-    processRedemption,
     refreshProfile,
-    connectWallet,
-    disconnectWallet,
     queueNotification,
-    clearError,
+    clearProfileError,
   };
 
   return (
@@ -140,7 +115,6 @@ export const LoyaltyContextProvider: React.FC<LoyaltyContextProviderProps> = ({ 
   );
 };
 
-// 4. Create a custom hook for easy consumption
 export const useLoyaltyContext = (): LoyaltyContextType => {
   const context = useContext(LoyaltyContext);
   if (context === undefined) {
@@ -148,4 +122,3 @@ export const useLoyaltyContext = (): LoyaltyContextType => {
   }
   return context;
 };
-```
