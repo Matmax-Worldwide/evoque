@@ -22,6 +22,7 @@ import { menuResolvers } from './menus';
 import { calendarResolvers } from './calendarResolvers';
 import { shippingResolvers } from './shipping';
 import { ecommerceResolvers } from './ecommerce';
+import { signageResolvers } from './signage';
 
 // Verificar la importación de cmsResolvers al inicio
 console.log('Verificando resolvers CMS importados:', {
@@ -476,6 +477,7 @@ const resolvers = {
     ...calendarResolvers.Query, // Add calendar queries
     ...shippingResolvers.Query,
     ...ecommerceResolvers.Query,
+    ...signageResolvers.Query, // Add signage queries
 
   },
   Mutation: {
@@ -497,6 +499,7 @@ const resolvers = {
     ...calendarResolvers.Mutation, // Add calendar mutations
     ...shippingResolvers.Mutation,
     ...ecommerceResolvers.Mutation,
+    ...signageResolvers.Mutation, // Add signage mutations
   },
   
   // Type resolvers

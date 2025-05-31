@@ -28,7 +28,9 @@ export type ComponentType =
   | 'CtaButton' 
   | 'Video' 
   | 'Gallery'
-  | 'Calendar';
+  | 'Calendar'
+  | 'QRCode'
+  | 'Signage'
 
 export interface AvailableSection {
   id: string;

@@ -421,6 +421,40 @@ const componentMap = {
       </div>
     )
   }),
+  // Signage
+  Signage: dynamic(() => import('./sections/SignageSection'), {
+    loading: () => (
+      <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 flex items-center">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div className="w-3/4 h-16 bg-gray-700 rounded animate-pulse"></div>
+              <div className="w-full h-6 bg-gray-700 rounded animate-pulse"></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white/10 rounded-lg p-6 space-y-4">
+                    <div className="w-8 h-8 bg-gray-600 rounded animate-pulse"></div>
+                    <div className="w-16 h-4 bg-gray-600 rounded animate-pulse"></div>
+                    <div className="w-12 h-8 bg-gray-600 rounded animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+              <div className="w-32 h-12 bg-white/20 rounded animate-pulse"></div>
+            </div>
+            <div className="flex justify-center">
+              <div className="bg-gray-800 rounded-lg p-4 shadow-xl">
+                <div className="w-80 h-48 bg-black rounded animate-pulse"></div>
+                <div className="mt-2 flex justify-between">
+                  <div className="w-16 h-3 bg-gray-600 rounded animate-pulse"></div>
+                  <div className="w-20 h-3 bg-gray-600 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }),
 };
 
 // Props for the SectionManager component

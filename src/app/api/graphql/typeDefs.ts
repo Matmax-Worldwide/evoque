@@ -1496,6 +1496,15 @@ export const typeDefs = gql`
     discount(id: ID!): Discount
     discountByCode(code: String!): Discount
     validateDiscount(code: String!, orderTotal: Float!, customerId: ID): DiscountValidation!
+    
+    # Digital Signage queries
+    getDevice(id: ID!): Device
+    listDevices(organizationId: ID!): [Device!]!
+    getSignageMedia(id: ID!, organizationId: ID!): SignageMedia
+    listSignageMedia(organizationId: ID!): [SignageMedia!]!
+    getPlaylist(id: ID!, organizationId: ID!): Playlist
+    listPlaylists(organizationId: ID!): [Playlist!]!
+    getPlaylistForDevice(deviceId: ID!): Playlist
   }
 
   # Root Mutation
@@ -1756,6 +1765,19 @@ export const typeDefs = gql`
     deleteDiscount(id: ID!): DiscountResult!
     activateDiscount(id: ID!): DiscountResult!
     deactivateDiscount(id: ID!): DiscountResult!
+    
+    # Digital Signage mutations
+    generateDevicePairingCode(input: GenerateDevicePairingCodeInput!): PairingCodeResponse!
+    pairSignageDevice(input: PairSignageDeviceInput!): DevicePairedResponse!
+    assignPlaylistToDevice(input: AssignPlaylistToDeviceInput!): Device!
+    uploadSignageMedia(input: UploadSignageMediaInput!): SignageMedia!
+    createPlaylist(input: CreatePlaylistInput!): Playlist!
+    addMediaToPlaylist(input: AddMediaToPlaylistInput!): Playlist!
+    updatePlaylist(id: ID!, input: UpdatePlaylistInput!): PlaylistResult!
+    deletePlaylist(id: ID!): PlaylistResult!
+    removeMediaFromPlaylist(playlistId: ID!, mediaId: ID!): PlaylistResult!
+    updateDeviceStatus(deviceId: ID!, status: DeviceStatus!): DeviceResult!
+    deleteSignageMedia(id: ID!): SignageMediaResult!
   }
 
   # HeaderStyle type for storing header configuration
@@ -3326,6 +3348,209 @@ export const typeDefs = gql`
   }
 
   # --------------- END DISCOUNT MODULE TYPES --- V1 ---
+
+  # --------------- DIGITAL SIGNAGE MODULE TYPES --- V1 ---
+
+  enum DeviceStatus {
+    PENDING
+    ONLINE
+    OFFLINE
+    ERROR
+    UNPAIRED
+  }
+
+  enum SignageMediaType {
+    VIDEO
+    IMAGE
+    DOCUMENT
+    AUDIO
+  }
+
+  type Device {
+    id: ID!
+    name: String
+    status: DeviceStatus!
+    lastSeenAt: DateTime
+    organizationId: ID!
+    currentPlaylistId: ID
+    deviceToken: String
+    ipAddress: String
+    userAgent: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    
+    # Relations
+    currentPlaylist: Playlist
+    pairingCodes: [PairingCode!]!
+  }
+
+  type PairingCode {
+    id: ID!
+    code: String!
+    qrCodeValue: String!
+    organizationId: ID!
+    deviceId: ID
+    expiresAt: DateTime!
+    isUsed: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    
+    # Relations
+    device: Device
+  }
+
+  type PairingCodeResponse {
+    code: String!
+    expiresAt: DateTime!
+    qrCodeValue: String!
+  }
+
+  type DevicePairedResponse {
+    success: Boolean!
+    message: String
+    device: Device
+    token: String
+  }
+
+  type SignageMedia {
+    id: ID!
+    name: String!
+    type: SignageMediaType!
+    mimeType: String
+    url: String!
+    thumbnailUrl: String
+    sizeBytes: Int
+    durationSeconds: Int
+    width: Int
+    height: Int
+    organizationId: ID!
+    uploadedByUserId: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    
+    # Relations
+    uploadedBy: User!
+    playlistItems: [PlaylistItem!]!
+  }
+
+  type Playlist {
+    id: ID!
+    name: String!
+    description: String
+    organizationId: ID!
+    createdByUserId: ID!
+    isActive: Boolean!
+    totalDuration: Int
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    
+    # Relations
+    createdBy: User!
+    items: [PlaylistItem!]!
+    assignedDevices: [Device!]!
+  }
+
+  type PlaylistItem {
+    id: ID!
+    playlistId: ID!
+    mediaId: ID!
+    order: Int!
+    durationSeconds: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    
+    # Relations
+    playlist: Playlist!
+    media: SignageMedia!
+  }
+
+  # Input types for Digital Signage
+  input GenerateDevicePairingCodeInput {
+    organizationId: ID!
+  }
+
+  input PairSignageDeviceInput {
+    pairingCode: String!
+    deviceName: String
+  }
+
+  input AssignPlaylistToDeviceInput {
+    organizationId: ID!
+    deviceId: ID!
+    playlistId: ID
+  }
+
+  input UploadSignageMediaInput {
+    organizationId: ID!
+    uploadedByUserId: ID!
+    name: String!
+    type: SignageMediaType!
+    mimeType: String
+    sizeBytes: Int
+    durationSeconds: Int
+    width: Int
+    height: Int
+  }
+
+  input CreatePlaylistInput {
+    organizationId: ID!
+    createdByUserId: ID!
+    name: String!
+    description: String
+  }
+
+  input AddMediaToPlaylistInput {
+    organizationId: ID!
+    playlistId: ID!
+    mediaId: ID!
+    order: Int
+    durationSeconds: Int!
+  }
+
+  input UpdatePlaylistInput {
+    name: String
+    description: String
+    isActive: Boolean
+  }
+
+  input DeviceFilterInput {
+    organizationId: ID!
+    status: DeviceStatus
+    search: String
+  }
+
+  input MediaFilterInput {
+    organizationId: ID!
+    type: SignageMediaType
+    search: String
+  }
+
+  input PlaylistFilterInput {
+    organizationId: ID!
+    isActive: Boolean
+    search: String
+  }
+
+  # Result types
+  type SignageMediaResult {
+    success: Boolean!
+    message: String!
+    media: SignageMedia
+  }
+
+  type PlaylistResult {
+    success: Boolean!
+    message: String!
+    playlist: Playlist
+  }
+
+  type DeviceResult {
+    success: Boolean!
+    message: String!
+    device: Device
+  }
+
+  # --------------- END DIGITAL SIGNAGE MODULE TYPES --- V1 ---
 
   # Shipping result types
 `; 

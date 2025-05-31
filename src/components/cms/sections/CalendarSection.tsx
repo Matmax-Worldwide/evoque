@@ -453,7 +453,7 @@ export default function CalendarSection({
             name: service.name,
             description: service.description || null,
             durationMinutes: service.durationMinutes,
-            price: service.price,
+            price: (service as any).prices && (service as any).prices.length > 0 ? (service as any).prices[0].amount : 0,
             serviceCategoryId: service.serviceCategoryId,
             serviceCategory: service.serviceCategory || null,
             bufferTimeBeforeMinutes: service.bufferTimeBeforeMinutes || null,

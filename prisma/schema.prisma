@@ -48,6 +48,10 @@ model User {
   reviews          Review[]             // Customer reviews
   reviewResponses  ReviewResponse[]     // Admin responses to reviews
   addresses        CustomerAddress[]    // Customer addresses
+  
+  // Digital Signage relations
+  signageMedia     SignageMedia[]       @relation("SignageMediaUploader")
+  playlists        Playlist[]           @relation("PlaylistCreator")
 
   @@index([email])
   @@index([roleId])
@@ -1930,3 +1934,135 @@ model CustomerAddress {
   @@index([customerId])
   @@index([type])
 }
+
+// --------------- END CUSTOMER ADDRESS MODULE MODELS ---------------
+
+// --------------- DIGITAL SIGNAGE MODULE MODELS ---------------
+
+enum DeviceStatus {
+  PENDING
+  ONLINE
+  OFFLINE
+  ERROR
+  UNPAIRED
+}
+
+enum SignageMediaType {
+  VIDEO
+  IMAGE
+  DOCUMENT
+  AUDIO
+}
+
+model Device {
+  id                String      @id @default(cuid())
+  name              String?
+  status            DeviceStatus @default(PENDING)
+  lastSeenAt        DateTime?
+  organizationId    String      // For multi-tenant support
+  currentPlaylistId String?
+  deviceToken       String?     // JWT token for device authentication
+  ipAddress         String?
+  userAgent         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  currentPlaylist Playlist? @relation("DeviceCurrentPlaylist", fields: [currentPlaylistId], references: [id])
+  pairingCodes    PairingCode[]
+  
+  @@index([organizationId])
+  @@index([status])
+  @@index([currentPlaylistId])
+}
+
+model PairingCode {
+  id             String   @id @default(cuid())
+  code           String   @unique // User-friendly format (e.g., XX-XX-XX)
+  qrCodeValue    String   // Full QR code data
+  organizationId String
+  deviceId       String?  // Null until device pairs
+  expiresAt      DateTime
+  isUsed         Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  device Device? @relation(fields: [deviceId], references: [id])
+  
+  @@index([code])
+  @@index([organizationId])
+  @@index([expiresAt])
+  @@index([isUsed])
+}
+
+model SignageMedia {
+  id                String           @id @default(cuid())
+  name              String
+  type              SignageMediaType
+  mimeType          String?
+  url               String           // CDN URL or file path
+  thumbnailUrl      String?          // Thumbnail for videos/images
+  sizeBytes         Int?
+  durationSeconds   Int?             // For videos/audio
+  width             Int?             // For images/videos
+  height            Int?             // For images/videos
+  organizationId    String
+  uploadedByUserId  String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  uploadedBy    User           @relation("SignageMediaUploader", fields: [uploadedByUserId], references: [id])
+  playlistItems PlaylistItem[]
+  
+  @@index([organizationId])
+  @@index([uploadedByUserId])
+  @@index([type])
+}
+
+model Playlist {
+  id               String @id @default(cuid())
+  name             String
+  description      String?
+  organizationId   String
+  createdByUserId  String
+  isActive         Boolean @default(true)
+  totalDuration    Int?    // Total duration in seconds (calculated)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  createdBy       User           @relation("PlaylistCreator", fields: [createdByUserId], references: [id])
+  items           PlaylistItem[]
+  assignedDevices Device[]       @relation("DeviceCurrentPlaylist")
+  
+  @@index([organizationId])
+  @@index([createdByUserId])
+  @@index([isActive])
+}
+
+model PlaylistItem {
+  id              String @id @default(cuid())
+  playlistId      String
+  mediaId         String
+  order           Int
+  durationSeconds Int    // How long to display this item
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  playlist Playlist     @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  media    SignageMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  
+  @@unique([playlistId, order]) // Ensure unique ordering within playlist
+  @@index([playlistId])
+  @@index([mediaId])
+}
+
+// --------------- END DIGITAL SIGNAGE MODULE MODELS ---------------

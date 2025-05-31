@@ -476,6 +476,51 @@ const ComponentSelector: React.FC<ComponentSelectorProps> = ({
           </div>
         </div>
       )
+    },
+    {
+      type: 'Signage',
+      title: 'Digital Signage',
+      description: 'Digital signage management with device monitoring, media library, and playlist control',
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+          <path d="M8 21H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M12 17V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
+          <path d="M12 7V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
+      color: 'text-slate-500 bg-slate-100 border-slate-200',
+      preview: (
+        <div className="w-full h-40 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg p-4 flex items-center">
+          <div className="flex-1 space-y-4">
+            <div className="text-white">
+              <div className="h-4 bg-white/80 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-white/60 rounded w-1/2"></div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white/10 rounded p-2 text-center">
+                  <div className="w-4 h-4 bg-white/60 rounded mx-auto mb-1"></div>
+                  <div className="h-2 bg-white/40 rounded w-8 mx-auto mb-1"></div>
+                  <div className="h-3 bg-white/60 rounded w-6 mx-auto"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="ml-4">
+            <div className="bg-gray-800 rounded p-2 shadow-lg">
+              <div className="w-16 h-10 bg-black rounded flex items-center justify-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+              <div className="mt-1 flex justify-between text-xs">
+                <div className="w-4 h-1 bg-gray-600 rounded"></div>
+                <div className="w-6 h-1 bg-gray-600 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
     }
   ];
 
