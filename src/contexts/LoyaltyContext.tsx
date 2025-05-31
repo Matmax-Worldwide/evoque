@@ -2,11 +2,24 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+// Import updated types
 import { Tier, LoyaltyProfile, PointsTransaction, Reward } from '@/types/loyalty';
 
-// Placeholder types if not fully defined - these should ideally come from a robust mock data source or API spec
-const silverTierMock: Tier = { id: 'silver', name: 'Silver', minPoints: 0, pointsToNextTier: 1000, iconName: 'ShieldCheckIcon' };
-const goldTierMock: Tier = { id: 'gold', name: 'Gold', minPoints: 1000, pointsToNextTier: 5000, iconName: 'ShieldCheckIcon' };
+// Updated mock tier data using "Killa" field names
+const silverTierMock: Tier = {
+  id: 'silver',
+  name: 'Silver',
+  minKillaToAchieve: 0,
+  killaToNextTier: 1000,
+  iconName: 'ShieldCheckIcon'
+};
+const goldTierMock: Tier = {
+  id: 'gold',
+  name: 'Gold',
+  minKillaToAchieve: 1000,
+  killaToNextTier: 5000,
+  iconName: 'ShieldCheckIcon'
+};
 
 
 type ProfileLoadingState = 'idle' | 'loading' | 'success' | 'error';
@@ -16,21 +29,16 @@ interface LoyaltyContextState {
   profileLoadingState: ProfileLoadingState;
   profileError: string | null;
 
-  // Keep other states if they are truly global, or manage them locally in components
-  pendingTransactions: PointsTransaction[]; // Example, might be fetched per page
-  selectedRewards: Reward[]; // Example, likely UI state, not global data
+  pendingTransactions: PointsTransaction[];
+  selectedRewards: Reward[];
   notifications: string[];
   walletStatus: 'connected' | 'disconnected' | 'connecting' | 'idle';
 }
 
 interface LoyaltyContextActions {
   refreshProfile: () => Promise<void>;
-  // connectWallet: () => Promise<void>; // Keep if relevant
-  // disconnectWallet: () => void; // Keep if relevant
   queueNotification: (message: string) => void;
   clearProfileError: () => void;
-  // updateBalance: (points: number) => void; // This might be part of refreshProfile or specific mutations
-  // processRedemption: (rewardId: string) => Promise<void>; // This is a specific action, likely not just context update
 }
 
 type LoyaltyContextType = LoyaltyContextState & LoyaltyContextActions;
@@ -42,34 +50,32 @@ export const LoyaltyContextProvider: React.FC<{ children: ReactNode }> = ({ chil
   const [profileLoadingState, setProfileLoadingState] = useState<ProfileLoadingState>('idle');
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // Other states - consider if they are truly global or should be local to specific components/pages
   const [pendingTransactions, setPendingTransactions] = useState<PointsTransaction[]>([]);
   const [selectedRewards, setSelectedRewards] = useState<Reward[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
   const [walletStatus, setWalletStatus] = useState<'connected' | 'disconnected' | 'connecting' | 'idle'>('idle');
 
   const refreshProfile = useCallback(async () => {
-    console.log('Context: refreshProfile called');
+    console.log('Context: refreshProfile called to fetch Killa profile');
     setProfileLoadingState('loading');
     setProfileError(null);
     try {
-      // Simulate API call to fetch user's loyalty profile
-      await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate delay
+      await new Promise(resolve => setTimeout(resolve, 1200));
 
-      // Mocked profile data
+      // Updated mock profile data with "Killa" field names
       const mockFetchedProfile: LoyaltyProfile = {
         userId: 'user-123-context',
-        currentPoints: 820,
-        pendingPoints: 75,
-        lifetimePoints: 2800,
+        currentKilla: 820, // Renamed from currentPoints
+        pendingKilla: 75,  // Renamed from pendingPoints
+        lifetimeKilla: 2800, // Renamed from lifetimePoints
         joinedDate: new Date(Date.now() - 120 * 86400000).toISOString(),
-        tier: silverTierMock, // Assigning the mock tier
+        tier: silverTierMock,
       };
       setProfile(mockFetchedProfile);
       setProfileLoadingState('success');
     } catch (err) {
-      console.error('Context: Failed to refresh profile', err);
-      setProfileError(err instanceof Error ? err.message : 'Failed to load profile.');
+      console.error('Context: Failed to refresh Killa profile', err);
+      setProfileError(err instanceof Error ? err.message : 'Failed to load Killa profile.');
       setProfileLoadingState('error');
     }
   }, []);
@@ -85,21 +91,15 @@ export const LoyaltyContextProvider: React.FC<{ children: ReactNode }> = ({ chil
   const clearProfileError = useCallback(() => {
     setProfileError(null);
     if(profileLoadingState === 'error') {
-        setProfileLoadingState('idle'); // Reset state if error is cleared
+        setProfileLoadingState('idle');
     }
   }, [profileLoadingState]);
-
-  // Consider if an initial profile load is needed when context provider mounts
-  // useEffect(() => {
-  //   refreshProfile();
-  // }, [refreshProfile]);
-
 
   const contextValue: LoyaltyContextType = {
     profile,
     profileLoadingState,
     profileError,
-    pendingTransactions, // Pass through other states if kept global
+    pendingTransactions,
     selectedRewards,
     notifications,
     walletStatus,

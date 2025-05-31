@@ -2,38 +2,30 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'; // Assuming this exists
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Skeleton } from '@/components/ui/skeleton';
-import Image from 'next/image'; // For optimized images
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { ShoppingCartIcon, InfoIcon } from 'lucide-react'; // Example icons
+import { ShoppingCartIcon, InfoIcon } from 'lucide-react';
+// FeaturedCarouselRewardItem is now imported from types/loyalty
+import { type FeaturedCarouselRewardItem } from '@/types/loyalty';
 
-// Assuming Reward type will be more fleshed out in types/loyalty.ts
-// For now, define a local version for props.
-export interface FeaturedRewardItem {
-  id: string;
-  name: string;
-  pointsRequired: number;
-  imageUrl?: string; // URL to the reward image
-  category?: string;
-  // Add other relevant fields like short description, stock, etc. later
-}
 
 interface FeaturedRewardsCarouselProps {
-  rewards: FeaturedRewardItem[];
+  rewards: FeaturedCarouselRewardItem[];
   title?: string;
   description?: string;
   isLoading?: boolean;
-  itemsToShow?: number; // Number of items visible at once in the carousel
+  itemsToShow?: number;
 }
 
 const FeaturedRewardsCarousel: React.FC<FeaturedRewardsCarouselProps> = ({
   rewards,
   title = "Featured Rewards",
-  description = "Check out these popular rewards you can redeem with your points.",
+  description = "Check out these popular rewards you can redeem with your Killa.", // Updated
   isLoading = false,
-  itemsToShow = 3, // Default for a common carousel view
+  itemsToShow = 3,
 }) => {
   if (isLoading) {
     return (
@@ -84,7 +76,7 @@ const FeaturedRewardsCarousel: React.FC<FeaturedRewardsCarouselProps> = ({
         <Carousel
           opts={{
             align: "start",
-            loop: rewards.length > itemsToShow, // Loop only if there are more items than visible
+            loop: rewards.length > itemsToShow,
           }}
           className="w-full"
         >
@@ -94,7 +86,7 @@ const FeaturedRewardsCarousel: React.FC<FeaturedRewardsCarouselProps> = ({
                 <Card className="h-full flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-200 ease-in-out rounded-lg">
                   <div className="relative w-full h-48">
                     <Image
-                      src={reward.imageUrl || '/placeholder-image.jpg'} // Provide a fallback placeholder
+                      src={reward.imageUrl || '/placeholder-image.jpg'}
                       alt={reward.name}
                       fill
                       style={{ objectFit: 'cover' }}
@@ -113,7 +105,7 @@ const FeaturedRewardsCarousel: React.FC<FeaturedRewardsCarouselProps> = ({
                   </CardHeader>
                   <CardContent className="flex-grow">
                     <p className="text-xl font-bold text-blue-700">
-                      {reward.pointsRequired.toLocaleString()} pts
+                      {reward.killaRequired.toLocaleString()} <span className="text-base font-medium">KLA</span> {/* Updated */}
                     </p>
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 pt-3 border-t bg-gray-50 p-4">
@@ -139,5 +131,4 @@ const FeaturedRewardsCarousel: React.FC<FeaturedRewardsCarouselProps> = ({
     </section>
   );
 };
-
 export default FeaturedRewardsCarousel;

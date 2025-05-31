@@ -6,58 +6,61 @@ import { render, screen } from '@testing-library/react';
 import PointsBalanceCard from './PointsBalanceCard';
 
 describe('PointsBalanceCard', () => {
-  it('renders current points correctly', () => {
-    render(<PointsBalanceCard currentPoints={1250} />);
+  it('renders current Killa correctly', () => { // Updated
+    render(<PointsBalanceCard currentKilla={1250} />);
     expect(screen.getByText('1,250')).toBeInTheDocument();
-    expect(screen.getByText('Available Points')).toBeInTheDocument();
+    // Check for the text node containing KLA, ensuring it's part of the correct element
+    const killaValueElement = screen.getByText('1,250');
+    const klaUnitElement = killaValueElement.nextElementSibling; // Assuming KLA is in a span next to the value
+    expect(klaUnitElement).toHaveTextContent('KLA');
+    expect(screen.getByText('Available Killa')).toBeInTheDocument(); // Updated
   });
 
-  it('renders pending points when provided', () => {
-    render(<PointsBalanceCard currentPoints={100} pendingPoints={50} />);
+  it('renders pending Killa when provided', () => { // Updated
+    render(<PointsBalanceCard currentKilla={100} pendingKilla={50} />);
     expect(screen.getByText('50')).toBeInTheDocument();
-    expect(screen.getByText('Pending Points')).toBeInTheDocument();
+    // Check for KLA with pending Killa
+    const pendingKillaValueElement = screen.getByText('50');
+    const pendingKlaUnitElement = pendingKillaValueElement.nextElementSibling;
+    expect(pendingKlaUnitElement).toHaveTextContent('KLA');
+    expect(screen.getByText('Pending Killa')).toBeInTheDocument(); // Updated
   });
 
-  it('does not render pending points section if pendingPoints is not provided', () => {
-    render(<PointsBalanceCard currentPoints={100} />);
-    expect(screen.queryByText('Pending Points')).not.toBeInTheDocument();
+  it('does not render pending Killa section if pendingKilla is not provided', () => { // Updated
+    render(<PointsBalanceCard currentKilla={100} />);
+    expect(screen.queryByText('Pending Killa')).not.toBeInTheDocument(); // Updated
   });
 
   it('renders tier name when provided', () => {
-    render(<PointsBalanceCard currentPoints={100} tierName="Gold" />);
+    render(<PointsBalanceCard currentKilla={100} tierName="Gold" />);
     expect(screen.getByText('Gold')).toBeInTheDocument();
     expect(screen.getByText('Current Tier')).toBeInTheDocument();
   });
 
   it('does not render tier status section if tierName is not provided', () => {
-    render(<PointsBalanceCard currentPoints={100} />);
+    render(<PointsBalanceCard currentKilla={100} />);
     expect(screen.queryByText('Current Tier')).not.toBeInTheDocument();
   });
 
   it('renders loading state correctly', () => {
-    const { container } = render(<PointsBalanceCard currentPoints={0} isLoading={true} />);
-    // Check for presence of shimmer/skeleton elements or specific loading text/ARIA roles
-    // For this example, we check the main title within the card, assuming it's different or absent in loading state.
-    // A more robust test would use data-testid on skeleton elements.
-    expect(screen.getByText('Your Points Balance')).toBeInTheDocument(); // Header title is still there
-    // Check for an element that indicates loading, e.g. one of the shimmer divs
-    const animatedDivs = container.querySelectorAll('.animate-pulse');
+    render(<PointsBalanceCard currentKilla={0} isLoading={true} />);
+    expect(screen.getByText('Your Killa Wallet')).toBeInTheDocument(); // Updated
+    const animatedDivs = document.querySelectorAll('.animate-pulse');
     expect(animatedDivs.length).toBeGreaterThan(0);
   });
 
   it('renders placeholder text when no optional data is provided', () => {
-    render(<PointsBalanceCard currentPoints={100} />);
-    // This specific message appears if both pendingPoints and tierName are absent
-    expect(screen.getByText('No pending points or tier information available.')).toBeInTheDocument();
+    render(<PointsBalanceCard currentKilla={100} />);
+    expect(screen.getByText('No pending Killa or tier information available.')).toBeInTheDocument(); // Updated
   });
 
-  it('does NOT render placeholder text if pending points is provided', () => {
-    render(<PointsBalanceCard currentPoints={100} pendingPoints={5} />);
-    expect(screen.queryByText('No pending points or tier information available.')).not.toBeInTheDocument();
+  it('does NOT render placeholder text if pending Killa is provided', () => { // Updated
+    render(<PointsBalanceCard currentKilla={100} pendingKilla={5} />);
+    expect(screen.queryByText('No pending Killa or tier information available.')).not.toBeInTheDocument(); // Updated
   });
 
   it('does NOT render placeholder text if tier name is provided', () => {
-    render(<PointsBalanceCard currentPoints={100} tierName="Silver" />);
-    expect(screen.queryByText('No pending points or tier information available.')).not.toBeInTheDocument();
+    render(<PointsBalanceCard currentKilla={100} tierName="Silver" />);
+    expect(screen.queryByText('No pending Killa or tier information available.')).not.toBeInTheDocument(); // Updated
   });
 });

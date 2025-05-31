@@ -7,23 +7,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 import PointsBalanceCard from '@/components/loyaltyprogram/cards/PointsBalanceCard';
-import QuickStatsGrid, { type StatDisplayItem } from '@/components/loyaltyprogram/displays/QuickStatsGrid';
-import RecentActivityFeed, { type ActivityFeedItem } from '@/components/loyaltyprogram/displays/RecentActivityFeed';
-import FeaturedRewardsCarousel, { type FeaturedCarouselRewardItem } from '@/components/loyaltyprogram/displays/FeaturedRewardsCarousel';
-import TierProgressBar, { type TierProgressDisplayInfo } from '@/components/loyaltyprogram/displays/TierProgressBar';
+import QuickStatsGrid from '@/components/loyaltyprogram/displays/QuickStatsGrid';
+import RecentActivityFeed from '@/components/loyaltyprogram/displays/RecentActivityFeed';
+import FeaturedRewardsCarousel from '@/components/loyaltyprogram/displays/FeaturedRewardsCarousel';
+import TierProgressBar from '@/components/loyaltyprogram/displays/TierProgressBar';
 
+// Import updated types and context hook
 import { useLoyaltyContext } from '@/contexts/LoyaltyContext';
-import { Tier, PointsTransaction, Reward } from '@/types/loyalty';
+import {
+    Tier,
+    LoyaltyProfile,
+    PointsTransaction, // Type name itself not changed, but internal fields are
+    Reward,
+    StatDisplayItem, // Assuming these specific component types are also updated or use Killa fields
+    ActivityFeedItem,
+    FeaturedCarouselRewardItem,
+    TierProgressDisplayInfo
+} from '@/types/loyalty';
 
+// Lucide icons for mock data
 import { GiftIcon, StarIcon, UsersIcon, ShoppingBagIcon, TrendingUpIcon, ActivityIcon, RefreshCwIcon } from 'lucide-react';
 
-const goldTierMock: Tier = { id: 'gold', name: 'Gold', minPoints: 1000, pointsToNextTier: 5000, iconName: 'ShieldCheckIcon' };
-// Silver tier mock to ensure tierProgressData calculation has a base if profile.tier is silver
-const silverTierMock: Tier = { id: 'silver', name: 'Silver', minPoints: 0, pointsToNextTier: 1000, iconName: 'ShieldCheckIcon' };
+// Mock Tier data using Killa fields
+const goldTierMock: Tier = { id: 'gold', name: 'Gold', minKillaToAchieve: 1000, killaToNextTier: 5000, iconName: 'ShieldCheckIcon' };
+const silverTierMock: Tier = { id: 'silver', name: 'Silver', minKillaToAchieve: 0, killaToNextTier: 1000, iconName: 'ShieldCheckIcon' };
 
 
 export default function LoyaltyProgramPage() {
   const [activeTab, setActiveTab] = useState('overview');
+  // Use updated context which provides profile with Killa fields
   const { profile, profileLoadingState, profileError, refreshProfile, clearProfileError } = useLoyaltyContext();
 
   const [localStatsLoading, setLocalStatsLoading] = useState(true);
@@ -40,23 +52,25 @@ export default function LoyaltyProgramPage() {
   useEffect(() => {
     if (profile && profile.tier) {
       const currentTier = profile.tier;
-      // Determine next tier based on current tier for mock purposes
       const nextT = currentTier.id === silverTierMock.id ? goldTierMock : undefined;
 
-      const pointsInCurrentTier = profile.currentPoints - currentTier.minPoints;
-      // Ensure pointsNeededForNext is based on the difference between next tier's minPoints and current tier's minPoints
-      const pointsNeededForNext = nextT ? (nextT.minPoints - currentTier.minPoints) : 0;
+      // Use Killa field names from profile
+      const currentKilla = profile.currentKilla || 0;
+      const killaInCurrentTier = currentKilla - currentTier.minKillaToAchieve;
+      const killaNeededForNext = nextT ? (nextT.minKillaToAchieve - currentTier.minKillaToAchieve) : 0;
 
       setTierProgressData({
         currentTierName: currentTier.name,
         nextTierName: nextT?.name,
-        currentPointsInTier: pointsInCurrentTier >= 0 ? pointsInCurrentTier : 0,
-        pointsNeededForNextTier: pointsNeededForNext > 0 ? pointsNeededForNext : 0,
+        currentKillaInTier: killaInCurrentTier >= 0 ? killaInCurrentTier : 0,
+        killaNeededForNextTier: killaNeededForNext > 0 ? killaNeededForNext : 0,
       });
-    } else if (profile) { // Has profile but no tier info (e.g. new user before tier assignment)
+    } else if (profile) {
+        const currentKilla = profile.currentKilla || 0;
         setTierProgressData({
-            currentPointsInTier: profile.currentPoints, // Show all points if no tier
-            pointsNeededForNextTier: silverTierMock.minPoints - profile.currentPoints > 0 ? silverTierMock.minPoints - profile.currentPoints : 0, // Points to reach first tier
+            currentKillaInTier: currentKilla,
+            // Calculate Killa needed to reach the first tier (Silver)
+            killaNeededForNextTier: silverTierMock.minKillaToAchieve > currentKilla ? silverTierMock.minKillaToAchieve - currentKilla : 0,
             nextTierName: silverTierMock.name,
         });
     } else {
@@ -70,35 +84,35 @@ export default function LoyaltyProgramPage() {
     setLocalActivitiesLoading(true);
     setLocalRewardsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Update mockStats to use profile data where applicable
     let progressPercentageValue = 'N/A';
-    if (tierProgressData && tierProgressData.pointsNeededForNextTier > 0) {
-        progressPercentageValue = `${Math.round((tierProgressData.currentPointsInTier / tierProgressData.pointsNeededForNextTier) * 100)}%`;
-    } else if (tierProgressData && tierProgressData.pointsNeededForNextTier === 0 && tierProgressData.currentTierName) {
-        // If at a tier and no points needed for next (could be highest, or next tier not defined for mock)
+    if (tierProgressData && tierProgressData.killaNeededForNextTier > 0) {
+        progressPercentageValue = `${Math.round((tierProgressData.currentKillaInTier / tierProgressData.killaNeededForNextTier) * 100)}%`;
+    } else if (tierProgressData && tierProgressData.killaNeededForNextTier === 0 && tierProgressData.currentTierName) {
         progressPercentageValue = '100%';
     }
 
-
     setMockStats([
-      { id: 'lifetime', label: 'Lifetime Points', value: profile?.lifetimePoints?.toLocaleString() ?? 'N/A', icon: StarIcon, unit: 'pts', bgColor: 'bg-yellow-100', textColor: 'text-yellow-600' },
-      { id: 'redemptions', label: 'Total Redemptions', value: 12, icon: ShoppingBagIcon, bgColor: 'bg-green-100', textColor: 'text-green-600' }, // Placeholder
+      // Use Killa field names from profile
+      { id: 'lifetime', label: 'Lifetime Killa', value: profile?.lifetimeKilla?.toLocaleString() ?? 'N/A', icon: StarIcon, unit: 'KLA', bgColor: 'bg-yellow-100', textColor: 'text-yellow-600' },
+      { id: 'redemptions', label: 'Total Redemptions', value: 12, icon: ShoppingBagIcon, bgColor: 'bg-green-100', textColor: 'text-green-600' },
       { id: 'next_tier_prog', label: `Progress to ${tierProgressData?.nextTierName || 'Next Tier'}`, value: progressPercentageValue, icon: TrendingUpIcon, bgColor: 'bg-indigo-100', textColor: 'text-indigo-600' },
     ]);
     setLocalStatsLoading(false);
 
     setMockActivities([
-      { id: 'act1', description: 'Signed up for newsletter', points: 50, date: new Date(Date.now() - 1 * 86400000).toISOString(), type: 'bonus' },
-      { id: 'act2', description: 'Purchased item "Super Widget"', points: 200, date: new Date(Date.now() - 2 * 86400000).toISOString(), type: 'earn' },
-      { id: 'act3', description: 'Redeemed "Free Coffee"', points: -50, date: new Date(Date.now() - 3 * 86400000).toISOString(), type: 'redeem' },
+      // Use killaAmount
+      { id: 'act1', description: 'Signed up for newsletter', killaAmount: 50, date: new Date(Date.now() - 1 * 86400000).toISOString(), type: 'bonus' },
+      { id: 'act2', description: 'Purchased item "Super Widget"', killaAmount: 200, date: new Date(Date.now() - 2 * 86400000).toISOString(), type: 'earn' },
+      { id: 'act3', description: 'Redeemed "Free Coffee"', killaAmount: -50, date: new Date(Date.now() - 3 * 86400000).toISOString(), type: 'redeem' },
     ]);
     setLocalActivitiesLoading(false);
 
     setMockRewards([
-      { id: 'rew1', name: 'Deluxe Coffee Maker', pointsRequired: 2500, imageUrl: '/placeholder-image.jpg', category: 'Electronics' },
-      { id: 'rew2', name: '$20 Off Coupon', pointsRequired: 1000, imageUrl: '/placeholder-image.jpg', category: 'Discounts' },
+      // Use killaRequired
+      { id: 'rew1', name: 'Deluxe Coffee Maker', killaRequired: 2500, imageUrl: '/placeholder-image.jpg', category: 'Electronics' },
+      { id: 'rew2', name: '$20 Off Coupon', killaRequired: 1000, imageUrl: '/placeholder-image.jpg', category: 'Discounts' },
     ]);
     setLocalRewardsLoading(false);
 
@@ -107,35 +121,29 @@ export default function LoyaltyProgramPage() {
   useEffect(() => {
     if (activeTab === 'overview') {
       if (profileLoadingState === 'idle' || profileLoadingState === 'error') {
-        // Only call refreshProfile if it's truly idle or was an error, not if it's already success or loading
         refreshProfile();
       }
-      // loadNonProfileOverviewData should be called regardless of profileLoadingState if tab is overview,
-      // as it might have its own data sources or use parts of profile that are available.
-      // However, its internal logic now depends on `profile` and `tierProgressData` for some stats.
-      if(profileLoadingState === 'success' || profile) { // Call once profile is available or successfully loaded
+      if(profileLoadingState === 'success' || profile) {
           loadNonProfileOverviewData();
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, profileLoadingState, profile, refreshProfile, loadNonProfileOverviewData]);
 
-
   const pageIsLoading = profileLoadingState === 'loading' || profileLoadingState === 'idle';
-  // Individual sections have their own loaders for non-profile data for now.
 
   return (
     <div className="p-4 md:p-6 space-y-6 bg-gray-100 min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-          Loyalty Program
+          Killa Program {/* Updated Title */}
         </h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6 bg-white p-1 rounded-lg shadow">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="history">Points History</TabsTrigger>
+          <TabsTrigger value="history">Killa History</TabsTrigger> {/* Updated */}
           <TabsTrigger value="rewards">Rewards Catalog</TabsTrigger>
           <TabsTrigger value="tiers">Tier Progress</TabsTrigger>
           <TabsTrigger value="campaigns">Active Campaigns</TabsTrigger>
@@ -144,7 +152,7 @@ export default function LoyaltyProgramPage() {
         <TabsContent value="overview" className="mt-4 space-y-6">
           {profileError && (
             <Card className="bg-red-50 border-red-500">
-              <CardHeader><CardTitle className="text-red-700">Error Loading Profile</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-red-700">Error Loading Killa Profile</CardTitle></CardHeader> {/* Updated */}
               <CardContent className="space-y-3">
                 <p className="text-red-600">{profileError}</p>
                 <Button onClick={() => { clearProfileError(); refreshProfile(); }} variant="destructive">
@@ -157,22 +165,26 @@ export default function LoyaltyProgramPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1">
               <PointsBalanceCard
-                currentPoints={profile?.currentPoints ?? 0}
-                pendingPoints={profile?.pendingPoints}
+                // Pass Killa-branded props
+                currentKilla={profile?.currentKilla ?? 0}
+                pendingKilla={profile?.pendingKilla}
                 tierName={profile?.tier?.name}
-                isLoading={pageIsLoading && !profile} // Show loading if page is loading AND profile isn't set yet
+                isLoading={pageIsLoading && !profile}
               />
             </div>
             <div className="lg:col-span-2">
-              {tierProgressData && ( // Render only if tierProgressData is available
+              {tierProgressData && (
                 <TierProgressBar
-                  {...tierProgressData}
+                  // Pass Killa-branded props from tierProgressData
+                  currentTierName={tierProgressData.currentTierName}
+                  nextTierName={tierProgressData.nextTierName}
+                  currentKillaInTier={tierProgressData.currentKillaInTier}
+                  killaNeededForNextTier={tierProgressData.killaNeededForNextTier}
                   isLoading={pageIsLoading && !profile}
                 />
               )}
-              {/* Skeleton for TierProgressBar if profile is loading and tierProgressData not yet computed */}
               {(pageIsLoading && !tierProgressData && !profileError) && (
-                <TierProgressBar currentPointsInTier={0} pointsNeededForNextTier={0} isLoading={true} />
+                <TierProgressBar currentKillaInTier={0} killaNeededForNextTier={0} isLoading={true} /> // Updated props
               )}
             </div>
           </div>
@@ -195,12 +207,21 @@ export default function LoyaltyProgramPage() {
         </TabsContent>
 
         {/* Placeholder content for other tabs */}
-        <TabsContent value="history" className="mt-4"><Card><CardHeader><CardTitle>Points History</CardTitle></CardHeader><CardContent><p>Content for points history.</p></CardContent></Card></TabsContent>
-        <TabsContent value="rewards" className="mt-4"><Card><CardHeader><CardTitle>Rewards Catalog</CardTitle></CardHeader><CardContent><p>Content for rewards catalog.</p></CardContent></Card></TabsContent>
-        <TabsContent value="tiers" className="mt-4"><Card><CardHeader><CardTitle>Tier Progress</CardTitle></CardHeader><CardContent><p>Content for tier progress.</p></CardContent></Card></TabsContent>
-        <TabsContent value="campaigns" className="mt-4"><Card><CardHeader><CardTitle>Active Campaigns</CardTitle></CardHeader><CardContent><p>Content for active campaigns.</p></CardContent></Card></TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <Card><CardHeader><CardTitle>Killa History</CardTitle></CardHeader><CardContent><p>Content for Killa history.</p></CardContent></Card> {/* Updated */}
+        </TabsContent>
+        <TabsContent value="rewards" className="mt-4">
+          <Card><CardHeader><CardTitle>Rewards Catalog</CardTitle></CardHeader><CardContent><p>Content for rewards catalog.</p></CardContent></Card>
+        </TabsContent>
+        <TabsContent value="tiers" className="mt-4">
+          <Card><CardHeader><CardTitle>Tier Progress</CardTitle></CardHeader><CardContent><p>Content for tier progress.</p></CardContent></Card>
+        </TabsContent>
+        <TabsContent value="campaigns" className="mt-4">
+          <Card><CardHeader><CardTitle>Active Campaigns</CardTitle></CardHeader><CardContent><p>Content for active campaigns.</p></CardContent></Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
 ```

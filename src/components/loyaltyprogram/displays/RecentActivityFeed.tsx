@@ -5,51 +5,49 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUpCircleIcon, ArrowDownCircleIcon, GiftIcon, AlertCircleIcon, type LucideIcon } from 'lucide-react';
+// ActivityFeedItem is now imported from types/loyalty
+import { type ActivityFeedItem, type PointsTransactionType } from '@/types/loyalty';
 
-export interface ActivityItem {
-  id: string;
-  description: string;
-  points?: number; // Positive for earn, negative for redeem
-  date: string; // Should be a parsable date string or Date object
-  icon?: LucideIcon;
-  type?: 'earn' | 'redeem' | 'bonus' | 'adjustment' | 'other';
-}
 
 interface RecentActivityFeedProps {
-  activities: ActivityItem[];
+  activities: ActivityFeedItem[];
   title?: string;
   description?: string;
   isLoading?: boolean;
   maxItems?: number;
 }
 
-const typeToIconMap: Record<NonNullable<ActivityItem['type']>, LucideIcon> = {
+const typeToIconMap: Record<PointsTransactionType, LucideIcon> = { // Used PointsTransactionType
   earn: ArrowUpCircleIcon,
   redeem: ArrowDownCircleIcon,
   bonus: GiftIcon,
   adjustment: AlertCircleIcon,
   other: AlertCircleIcon,
+  transfer_in: ArrowUpCircleIcon, // Added
+  transfer_out: ArrowDownCircleIcon, // Added
 };
 
-const typeToColorMap: Record<NonNullable<ActivityItem['type']>, string> = {
+const typeToColorMap: Record<PointsTransactionType, string> = {
     earn: 'text-green-500',
     redeem: 'text-red-500',
     bonus: 'text-indigo-500',
     adjustment: 'text-yellow-600',
     other: 'text-gray-500',
+    transfer_in: 'text-green-500', // Added
+    transfer_out: 'text-red-500', // Added
 };
 
-const pointsToColor = (points?: number): string => {
-    if (points === undefined) return 'text-gray-500';
-    if (points > 0) return 'text-green-600 font-semibold';
-    if (points < 0) return 'text-red-600 font-semibold';
+const killaAmountToColor = (amount?: number): string => { // Renamed from pointsToColor
+    if (amount === undefined) return 'text-gray-500';
+    if (amount > 0) return 'text-green-600 font-semibold';
+    if (amount < 0) return 'text-red-600 font-semibold';
     return 'text-gray-500';
 }
 
 const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
   activities,
-  title = "Recent Activity",
-  description = "Latest loyalty program transactions.",
+  title = "Recent Killa Activity", // Updated
+  description = "Latest Killa transactions.", // Updated
   isLoading = false,
   maxItems = 5,
 }) => {
@@ -86,7 +84,7 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
         <CardContent>
-          <p className="text-center py-6 text-gray-500">No recent activity to display.</p>
+          <p className="text-center py-6 text-gray-500">No recent Killa activity to display.</p> {/* Updated */}
         </CardContent>
       </Card>
     );
@@ -114,15 +112,15 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
                       {activity.description}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
-                      {new Date(activity.date).toLocaleDateString(undefined, {
+                      {new Date(activity.date as string).toLocaleDateString(undefined, { // Cast to string if Date object
                         year: 'numeric', month: 'short', day: 'numeric',
                       })}
                     </p>
                   </div>
-                  {typeof activity.points === 'number' && (
-                    <div className={`text-sm ${pointsToColor(activity.points)} whitespace-nowrap`}>
-                      {activity.points > 0 ? '+' : ''}
-                      {activity.points.toLocaleString()} pts
+                  {typeof activity.killaAmount === 'number' && ( // Changed from points
+                    <div className={`text-sm ${killaAmountToColor(activity.killaAmount)} whitespace-nowrap`}> {/* Updated */}
+                      {activity.killaAmount > 0 ? '+' : ''}
+                      {activity.killaAmount.toLocaleString()} KLA {/* Updated */}
                     </div>
                   )}
                 </div>
@@ -141,5 +139,4 @@ const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
     </Card>
   );
 };
-
 export default RecentActivityFeed;

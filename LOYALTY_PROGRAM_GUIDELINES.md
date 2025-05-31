@@ -1,5 +1,10 @@
 # Loyalty Program Module Implementation Guidelines
 
+## Loyalty Token Branding
+- The official name for the loyalty currency/points is **Killa**.
+- The textual symbol to be used for Killa is **KLA** (e.g., '100 KLA').
+- All user-facing text, UI components, notifications, and documentation within the loyalty program module must use the 'Killa' name and 'KLA' symbol consistently where applicable.
+
 ## Directory Structure
 
 ```
@@ -60,13 +65,15 @@ src/app/[locale]/loyaltyprogram/
 - **Error Handling**: Display user-friendly error messages with retry options
 
 ### Required Display Components
-- `PointsBalanceCard`: Shows current balance, pending points, tier status
+- `PointsBalanceCard`: Shows current balance, pending points, tier status. *Note: Should display "Killa Balance" or similar, using "KLA" as the symbol (e.g., "Available Killa").*
 - `QuickStatsGrid`: Displays key metrics (lifetime points, redemptions, tier progress)
 - `RecentActivityFeed`: Latest 5 transactions with icons
 - `FeaturedRewardsCarousel`: Highlight top rewards
 - `TierProgressBar`: Visual representation of tier advancement
 
 ## Sub-Feature Pages
+
+*Note: All sub-feature pages displaying point amounts or transactions should use "KLA" as the symbol for Killa.*
 
 ### History Page (`history/page.tsx`)
 - **Components Required**:
@@ -151,6 +158,7 @@ src/components/loyaltyprogram/
 │   └── TierDistributionChart.tsx
 └── LoyaltyProgramSidebar.tsx
 ```
+*Note: Components within this library that handle point display (e.g., `PointsBalanceCard`, `PointsHistoryTable`) will need to be updated to use "Killa" and "KLA" branding.*
 
 ## GraphQL Operations Required
 
@@ -161,6 +169,7 @@ src/components/loyaltyprogram/
 - `GET_TIER_DETAILS`: All tier information
 - `GET_ACTIVE_CAMPAIGNS`: Current promotions
 - `GET_LOYALTY_ANALYTICS`: Dashboard metrics
+*Note: Field names in GraphQL schemas related to points (e.g., `points`, `pointsRequired`) should ideally be updated to reflect the 'Killa' terminology (e.g., `killaBalance`, `killaRequired`). This change should be coordinated with backend development.*
 
 ### Mutations
 - `REDEEM_REWARD`: Process reward redemption
@@ -191,6 +200,8 @@ interface EarningRule {}
 interface NotificationPreferences {}
 ```
 *(These interfaces will be populated with specific properties as development progresses)*
+
+*Note: Interface property names like `currentPoints`, `pointsTransaction`, `pointsRequired` should be updated to use 'Killa' (e.g., `currentKilla`, `killaTransaction`, `killaRequired`). The unit 'pts' (or similar) should be replaced by 'KLA'.*
 
 ### Component Props Interfaces
 - Define props for each component with proper typing

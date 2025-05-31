@@ -3,22 +3,19 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AwardIcon, HourglassIcon, TrendingUpIcon } from 'lucide-react'; // Example icons
-
-// Assuming Tier might have more details later, for now, just a name.
-// import { Tier } from '@/types/loyalty';
+import { AwardIcon, HourglassIcon, TrendingUpIcon } from 'lucide-react';
+// import { Tier } from '@/types/loyalty'; // Tier details might come from a fuller Profile type
 
 interface PointsBalanceCardProps {
-  currentPoints: number;
-  pendingPoints?: number;
+  currentKilla: number; // Changed from currentPoints
+  pendingKilla?: number; // Changed from pendingPoints
   tierName?: string;
-  // tierIconUrl?: string; // For future use
   isLoading?: boolean;
 }
 
 const PointsBalanceCard: React.FC<PointsBalanceCardProps> = ({
-  currentPoints,
-  pendingPoints,
+  currentKilla,
+  pendingKilla,
   tierName,
   isLoading = false,
 }) => {
@@ -26,7 +23,7 @@ const PointsBalanceCard: React.FC<PointsBalanceCardProps> = ({
     return (
       <Card className="shadow-lg w-full">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Your Points Balance</CardTitle>
+          <CardTitle className="text-lg font-semibold">Your Killa Wallet</CardTitle> {/* Updated */}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="animate-pulse space-y-3">
@@ -43,36 +40,33 @@ const PointsBalanceCard: React.FC<PointsBalanceCardProps> = ({
     <Card className="shadow-lg w-full">
       <CardHeader>
         <CardTitle className="text-xl font-bold text-gray-800">
-          Your Loyalty Wallet
+          Your Killa Wallet
         </CardTitle>
-        <CardDescription>Overview of your points and tier status.</CardDescription>
+        <CardDescription>Overview of your Killa and tier status.</CardDescription> {/* Updated */}
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Current Points Section */}
         <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
           <div>
-            <p className="text-sm font-medium text-blue-700">Available Points</p>
+            <p className="text-sm font-medium text-blue-700">Available Killa</p> {/* Updated */}
             <p className="text-3xl font-extrabold text-blue-600">
-              {currentPoints.toLocaleString()}
+              {currentKilla.toLocaleString()} <span className="text-lg font-semibold">KLA</span> {/* Updated */}
             </p>
           </div>
           <TrendingUpIcon className="w-10 h-10 text-blue-500" />
         </div>
 
-        {/* Pending Points Section - Conditional */}
-        {typeof pendingPoints === 'number' && (
+        {typeof pendingKilla === 'number' && (
           <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
             <div>
-              <p className="text-xs font-medium text-yellow-700">Pending Points</p>
+              <p className="text-xs font-medium text-yellow-700">Pending Killa</p> {/* Updated */}
               <p className="text-xl font-semibold text-yellow-600">
-                {pendingPoints.toLocaleString()}
+                {pendingKilla.toLocaleString()} <span className="text-sm font-medium">KLA</span> {/* Updated */}
               </p>
             </div>
             <HourglassIcon className="w-6 h-6 text-yellow-500" />
           </div>
         )}
 
-        {/* Tier Status Section - Conditional */}
         {tierName && (
           <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
             <div>
@@ -80,20 +74,16 @@ const PointsBalanceCard: React.FC<PointsBalanceCardProps> = ({
               <p className="text-xl font-semibold text-green-600">
                 {tierName}
               </p>
-              {/* Placeholder for tier benefits link or info */}
-              {/* <a href="#" className="text-xs text-green-500 hover:underline">View tier benefits</a> */}
             </div>
             <AwardIcon className="w-6 h-6 text-green-500" />
           </div>
         )}
 
-        {!tierName && typeof pendingPoints !== 'number' && (
-             <p className="text-sm text-gray-500 text-center">No pending points or tier information available.</p>
+        {!tierName && typeof pendingKilla !== 'number' && (
+             <p className="text-sm text-gray-500 text-center">No pending Killa or tier information available.</p> {/* Updated */}
         )}
-
       </CardContent>
     </Card>
   );
 };
-
 export default PointsBalanceCard;
