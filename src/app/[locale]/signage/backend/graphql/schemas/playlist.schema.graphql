@@ -1,0 +1,50 @@
+# GraphQL type for Playlists
+type Playlist {
+  id: ID!
+  name: String!
+  description: String
+  organizationId: ID!
+  createdByUserId: ID!
+  createdAt: String! # ISO Date string
+  updatedAt: String! # ISO Date string
+  items: [PlaylistItem!]! # Ordered list of items
+}
+
+# GraphQL type for items within a Playlist
+type PlaylistItem {
+  id: ID!
+  media: Media! # The actual Media object, resolved
+  order: Int!
+  durationSeconds: Int!
+  # settings: JSON # Future: for item-specific overrides
+  createdAt: String! # ISO Date string
+}
+
+input CreatePlaylistInput {
+  organizationId: ID!
+  createdByUserId: ID! # From context ideally
+  name: String!
+  description: String
+}
+
+input AddMediaToPlaylistInput {
+  organizationId: ID! # For validation/scoping
+  playlistId: ID!
+  mediaId: ID!
+  order: Int # If not provided, item is added to the end.
+  durationSeconds: Int!
+}
+
+# Extend Mutation and Query types
+type Mutation {
+  createPlaylist(input: CreatePlaylistInput!): Playlist!
+  addMediaToPlaylist(input: AddMediaToPlaylistInput!): Playlist! # Returns the updated playlist
+  # Future: updatePlaylistItem, removePlaylistItem, reorderPlaylistItems
+}
+
+type Query {
+  getPlaylist(id: ID!, organizationId: ID!): Playlist
+  listPlaylists(organizationId: ID!): [Playlist!]!
+  getPlaylistForDevice(deviceId: ID!): Playlist
+  # Auth context should provide organizationId for device for security
+}

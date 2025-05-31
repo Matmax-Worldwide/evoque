@@ -1,0 +1,44 @@
+# GraphQL type for Media objects
+type Media {
+  id: ID!
+  name: String!
+  type: String! # VIDEO, IMAGE, AUDIO, URL, WIDGET
+  mimeType: String
+  url: String!
+  thumbnailUrl: String
+  sizeBytes: Int
+  durationSeconds: Int
+  width: Int
+  height: Int
+  organizationId: ID!
+  uploadedByUserId: ID!
+  createdAt: String! # ISO Date string
+  updatedAt: String! # ISO Date string
+}
+
+input UploadMediaInput {
+  organizationId: ID!
+  uploadedByUserId: ID! # Should come from context in a real app
+  name: String!
+  type: String! # VIDEO, IMAGE, AUDIO, URL, WIDGET
+  mimeType: String
+  sizeBytes: Int
+  durationSeconds: Int
+  width: Int
+  height: Int
+  # Actual file upload would be handled via a multipart request
+  # or a pre-signed URL upload flow. This input is for metadata.
+}
+
+# Extend Mutation type if it's already defined elsewhere,
+# or define it if this is the first schema with mutations.
+# For now, assuming it might be merged.
+type Mutation {
+  # Simulates uploading a media file and creating its metadata record
+  uploadMedia(input: UploadMediaInput!): Media!
+}
+
+type Query {
+  getMedia(id: ID!, organizationId: ID!): Media
+  listMedia(organizationId: ID!): [Media!]!
+}

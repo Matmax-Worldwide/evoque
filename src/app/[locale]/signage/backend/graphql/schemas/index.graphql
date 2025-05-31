@@ -1,0 +1,44 @@
+# import Query.*, Mutation.* from "./device.schema.graphql"
+# import Query.*, Mutation.* from "./media.schema.graphql"
+# import Query.*, Mutation.* from "./playlist.schema.graphql"
+
+# Merged Query Type
+type Query {
+  # From device.schema.graphql
+  getDevice(id: ID!): Device
+  listDevices(organizationId: ID!): [Device!]!
+
+  # From media.schema.graphql
+  getMedia(id: ID!, organizationId: ID!): Media
+  listMedia(organizationId: ID!): [Media!]!
+
+  # From playlist.schema.graphql
+  getPlaylist(id: ID!, organizationId: ID!): Playlist
+  listPlaylists(organizationId: ID!): [Playlist!]!
+  getPlaylistForDevice(deviceId: ID!): Playlist
+}
+
+# Merged Mutation Type
+type Mutation {
+  # From device.schema.graphql
+  generateDevicePairingCode(input: GenerateDevicePairingCodeInput!): PairingCodeResponse!
+  pairSignageDevice(input: PairSignageDeviceInput!): DevicePairedResponse!
+  assignPlaylistToDevice(input: AssignPlaylistToDeviceInput!): Device # Returns updated device
+
+  # From media.schema.graphql
+  uploadMedia(input: UploadMediaInput!): Media!
+
+  # From playlist.schema.graphql
+  createPlaylist(input: CreatePlaylistInput!): Playlist!
+  addMediaToPlaylist(input: AddMediaToPlaylistInput!): Playlist!
+}
+
+# Ensure all referenced types (Device, Media, Playlist, PlaylistItem, inputs, etc.)
+# are defined in their respective schema files (device.schema.graphql, media.schema.graphql, playlist.schema.graphql)
+# or imported/loaded by the GraphQL server setup.
+# The .graphql files for device, media, and playlist already define these.
+# The main schema file (this one) primarily serves to stitch the Queries and Mutations.
+# Other types are typically made available globally by most GraphQL schema-building tools.
+# For example, the `Device` type defined in `device.schema.graphql` will be available
+# when `getDevice` query is resolved, without needing to redefine `Device` here.
+# Same for `Media`, `Playlist`, `PlaylistItem` and all input types.

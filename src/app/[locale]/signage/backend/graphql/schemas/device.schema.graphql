@@ -1,0 +1,54 @@
+# Basic Device type for GraphQL
+type Device {
+  id: ID!
+  name: String
+  status: String! # PENDING, ONLINE, OFFLINE, ERROR, UNPAIRED
+  lastSeenAt: String # ISO Date string
+  organizationId: ID!
+  createdAt: String! # ISO Date string
+  updatedAt: String! # ISO Date string
+  currentPlaylistId: ID # ID of the currently assigned playlist
+  # Add other relevant fields from device.model.ts that clients might need
+}
+
+# Type returned when a pairing code is generated
+type PairingCodeResponse {
+  code: String! # Format: XX-XX-XX for readability
+  expiresAt: String! # ISO Date String
+  qrCodeValue: String! # String to be encoded in QR (e.g. the code or a URL)
+}
+
+# Response for the pairSignageDevice mutation
+type DevicePairedResponse {
+  success: Boolean!
+  message: String
+  device: Device # Ensure this uses the updated Device type
+  token: String # Conceptual JWT for the device
+}
+
+input GenerateDevicePairingCodeInput {
+  organizationId: ID!
+}
+
+input PairSignageDeviceInput {
+  pairingCode: String!
+  deviceName: String # Optional: user can name device during pairing from CMS side if flow changes
+                        # or device can send its preferred name.
+}
+
+input AssignPlaylistToDeviceInput {
+  organizationId: ID! # For validation
+  deviceId: ID!
+  playlistId: ID # Null to unassign
+}
+
+type Mutation {
+  generateDevicePairingCode(input: GenerateDevicePairingCodeInput!): PairingCodeResponse!
+  pairSignageDevice(input: PairSignageDeviceInput!): DevicePairedResponse!
+  assignPlaylistToDevice(input: AssignPlaylistToDeviceInput!): Device # Returns updated device
+}
+
+type Query {
+  getDevice(id: ID!): Device
+  listDevices(organizationId: ID!): [Device!]!
+}
