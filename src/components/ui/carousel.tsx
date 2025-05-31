@@ -1,3 +1,29 @@
+/**
+ * @fileoverview This file provides a suite of components for creating carousels
+ * or sliders, enabling users to navigate through a series of items.
+ *
+ * The components are built on top of the `embla-carousel-react` library,
+ * providing a robust foundation for carousel functionality. React Context
+ * (`CarouselContext` and the `useCarousel` hook) is used internally to manage
+ * the carousel's state and allow child components to interact with the carousel instance.
+ *
+ * Styling is applied using Tailwind CSS (via the `cn` utility), and navigation
+ * controls utilize `lucide-react` for icons and the local `Button` component
+ * (from `@/components/ui/button`) for their appearance and behavior.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui. Customizations are primarily focused on
+ * integrating `embla-carousel-react` into a composable set of React components
+ * and applying the project's design system through Tailwind CSS.
+ *
+ * Main exported components and their roles:
+ * - `Carousel`: The root component that initializes the Embla Carousel instance and provides the context.
+ * - `CarouselContent`: The scrollable container for carousel items.
+ * - `CarouselItem`: A wrapper for each individual slide or item within the carousel.
+ * - `CarouselPrevious`: A button component to navigate to the previous slide.
+ * - `CarouselNext`: A button component to navigate to the next slide.
+ * Also exports `CarouselApi` type, which is the type for the Embla Carousel API instance.
+ */
 "use client"
 
 import * as React from "react"

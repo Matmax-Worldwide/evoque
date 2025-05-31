@@ -1,3 +1,30 @@
+/**
+ * @fileoverview This file provides a Calendar component for selecting dates
+ * and date ranges, designed for use within the application.
+ *
+ * The `Calendar` component is a styled wrapper around the `react-day-picker` library,
+ * a flexible and popular library for building date pickers.
+ * Styling is applied using Tailwind CSS, with utility functions like `cn` (from `@/lib/utils`)
+ * for conditional class names and `buttonVariants` (from `@/components/ui/button`)
+ * for styling the navigation buttons. Icons for navigation (next/previous month)
+ * are provided by `lucide-react`.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui. Customizations are primarily focused on applying
+ * specific Tailwind CSS classes to the various parts of the `react-day-picker`
+ * component (e.g., months, month, caption, cells, day) to achieve the desired visual
+ * appearance.
+ *
+ * Main features derived from `react-day-picker` and exposed through this component include:
+ * - Single date selection.
+ * - Date range selection (if `mode="range"` prop is used).
+ * - Navigation between months.
+ * - Display of days outside the current month.
+ * - Custom styling for today's date, selected dates, dates outside the month, disabled dates, etc.
+ *
+ * The component exports `Calendar` and its props type `CalendarProps` (which is an alias
+ * for `react-day-picker`'s `ComponentProps`).
+ */
 "use client"
 
 import * as React from "react"

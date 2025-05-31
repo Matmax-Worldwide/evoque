@@ -1,3 +1,20 @@
+/**
+ * @fileoverview This file provides a Badge component for displaying status
+ * indicators, tags, or other short pieces of information.
+ *
+ * The component uses `cva` (class-variance-authority) to define different
+ * visual styles (variants) such as 'default', 'secondary', 'destructive',
+ * and 'outline'. It is styled using Tailwind CSS.
+ *
+ * This implementation appears to be a standard setup, likely adapted or
+ * generated from a UI library like ShadCN/ui, with no major project-specific
+ * customizations visible directly within this file's code.
+ *
+ * Exported:
+ * - `Badge`: The React component for rendering badges.
+ * - `badgeVariants`: The `cva` object containing the variant definitions,
+ *   which can be used for further customization if needed.
+ */
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 

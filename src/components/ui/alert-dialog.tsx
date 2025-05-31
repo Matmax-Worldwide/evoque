@@ -1,3 +1,27 @@
+/**
+ * @fileoverview This file provides a set of Alert Dialog components for use within the application.
+ * These components are based on the Radix UI Alert Dialog primitives (`@radix-ui/react-alert-dialog`)
+ * and are styled using Tailwind CSS, following the conventions commonly found in UI libraries
+ * like ShadCN/ui.
+ *
+ * The implementation appears to be a standard setup for alert dialogs, likely generated
+ * or adapted from such a UI library, with no major project-specific customizations
+ * visible directly within this file's code.
+ *
+ * Exported Components and their general roles:
+ * - `AlertDialog`: The root component that groups all parts of an alert dialog.
+ * - `AlertDialogTrigger`: A button or element that triggers the opening of the alert dialog.
+ * - `AlertDialogContent`: The main modal window that appears, containing the dialog's content.
+ *   It includes an overlay and animations for appearance/disappearance.
+ * - `AlertDialogHeader`: A container for the title and description of the dialog.
+ * - `AlertDialogFooter`: A container for action and cancel buttons.
+ * - `AlertDialogTitle`: The title of the alert dialog.
+ * - `AlertDialogDescription`: The descriptive text or body of the alert dialog.
+ * - `AlertDialogAction`: The button typically used for the primary confirm or action (e.g., "Continue", "Delete").
+ * - `AlertDialogCancel`: The button typically used to close the dialog or cancel the action (e.g., "Cancel").
+ * Other exported parts like `AlertDialogPortal` and `AlertDialogOverlay` are Radix UI primitives
+ * used internally for proper modal behavior and styling.
+ */
 "use client"
 
 import * as React from "react"

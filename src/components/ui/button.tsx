@@ -1,3 +1,26 @@
+/**
+ * @fileoverview This file provides a reusable Button component.
+ *
+ * The `Button` component uses `cva` (class-variance-authority) to define various
+ * visual styles (variants such as 'default', 'destructive', 'outline', 'secondary',
+ * 'ghost', 'link') and sizes ('default', 'sm', 'lg', 'icon'). It is styled using
+ * Tailwind CSS.
+ *
+ * It also supports an `asChild` prop, leveraging Radix UI's `Slot` component.
+ * This allows the button to be rendered as a different underlying HTML element or
+ * React component while inheriting the button's styling and behavior, which is
+ * particularly useful for integrating with Next.js `Link` components or other
+ * custom interactive elements.
+ *
+ * This implementation appears to be a standard setup, likely generated or adapted
+ * from a UI library like ShadCN/ui, with no major project-specific customizations
+ * visible directly within this file's code.
+ *
+ * Exported:
+ * - `Button`: The React component for rendering buttons.
+ * - `buttonVariants`: The `cva` object containing the variant and size definitions,
+ *   which can be used for further customization or applying button styles to other elements.
+ */
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
