@@ -533,7 +533,8 @@ export const ecommerceResolvers = {
               include: {
                 product: true
               }
-            }
+            },
+            shipments: true
           },
           take: pagination?.limit || pagination?.pageSize || 50,
           skip: pagination?.offset || ((pagination?.page || 1) - 1) * (pagination?.pageSize || 50),
